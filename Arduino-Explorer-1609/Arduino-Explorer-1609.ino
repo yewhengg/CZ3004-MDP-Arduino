@@ -57,12 +57,12 @@ double RPMLeft;
 int counterRight = 0;
 int counterLeft = 0;
 
-float kpLeftME = 0.1406;
-float kiLeftME = 0.0156;
-float kdLeftME = 0.3163;
-float kpRightME = 0.1514;
-float kiRightME = 0.0168;
-float kdRightME = 0.3407;
+float kpLeftME = 4; //0.1406;
+float kiLeftME = 0.27; //0.0156;
+float kdLeftME = 5; //0.3163;
+float kpRightME = 4; //0.1514;
+float kiRightME = 0.277; //0.0168;
+float kdRightME = 5; //0.3407;
 double k1LeftME = 0;
 double k2LeftME = 0;
 double k3LeftME = 0;
@@ -99,11 +99,30 @@ void loop()
   // md.setM1Speed(200);
   // md.setM2Speed(400);
   //md.setSpeeds(0, 0);
-  md.setSpeeds(400, 400);
-  // goStraight1Grid();
-  delay(5000);
+//  md.setSpeeds(400, 400);
+String cc;
+if (Serial.available() > 0)
+  {
+    cc = char(Serial.read());
+//    readRobotCommands(cc); 
+  }
+  printDistance();
+//  goStraight1Grid();
+  delay(1000);
 }
 
+void printDistance(){
+  Serial.print("r");
+  Serial.print(SRSensorFront1.getDistance());
+  Serial.print("|");
+  Serial.print(SRSensorFront2.getDistance());
+  Serial.print("|");
+  Serial.print(SRSensorLeft1.getDistance());
+  Serial.print("|");
+  Serial.print(SRSensorLeft2.getDistance());
+  Serial.print("|");
+  Serial.println(LRSensorRight1.getDistance());
+}
 void leftEncoderInc()
 {
   counterLeft++;
@@ -143,10 +162,10 @@ void PIDCalculation(float kpLeftME, float kiLeftME, float kdLeftME, float kpRigh
 {
   // Calculate Digital PID Parameters
   k1LeftME = kpLeftME + kiLeftME + kdLeftME;
-  k2LeftME = kpLeftME - (2 * kdLeftME);
+  k2LeftME = -kpLeftME - (2 * kdLeftME);
   k3LeftME = kdLeftME;
   k1RightME = kpRightME + kiRightME + kdRightME;
-  k2RightME = kpRightME - (2 * kdRightME);
+  k2RightME = -kpRightME - (2 * kdRightME);
   k3RightME = kdRightME;
 
   // Calculate Error
@@ -167,8 +186,7 @@ void PIDCalculation(float kpLeftME, float kiLeftME, float kdLeftME, float kpRigh
 }
 
 void goStraight1Grid() {
-  Serial.println("In goStraight1Grid");
-  long distance = 10980;
+  long distance = 1000000;
   double totalDistance = 0;
   while(1) {
     if (totalDistance >= distance) {
@@ -178,12 +196,15 @@ void goStraight1Grid() {
     } else {
       moveForward();
       totalDistance = totalDistance + RPMLeft + RPMRight;
+      Serial.print("RPM Left");
+      Serial.println(RPMLeft);
+      Serial.print("RPM Right");
+      Serial.println(RPMRight);
     }
   }  
 }
 
 void moveForward() {
-  Serial.println("In moveForward()");
   PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setPoint);
   md.setSpeeds(PIDOutputRightME * 250, PIDOutputLeftME * 250);
   delay(50);

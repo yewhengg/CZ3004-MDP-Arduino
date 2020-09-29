@@ -1,4 +1,3 @@
-// https://github.com/nigelawj/cz3004
 // https://github.com/cheyanniee/Multidisciplinary_Design_Project_CZ3004/blob/master/Arduino/Integrated_code_final/Integrated_code_final.ino
 // https://github.com/shiheng7/CZ3004-Arduino/blob/master/MDP_GRP9_Arduino/MDP_GRP9_Arduino.ino
 
