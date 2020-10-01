@@ -19,6 +19,8 @@
 
 // Sensor Library
 // https://github.com/qub1750ul/Arduino_SharpIR
+//#include <SharpIR.h>
+// https://github.com/guillaume-rico/SharpIR
 #include <SharpIR.h>
 
 // Pin Interrupt Library
@@ -34,18 +36,23 @@
 #define motorEncoderLeft1 11
 #define srSensorFront1 A0   //PS1
 #define srSensorFront2 A1   //PS2
-#define srSensorLeft1 A2    //PS3
-#define srSensorLeft2 A3    //PS4
-#define lrSensorRight1 A4   //PS5
-// A5 = PS6
+#define srSensorFront3 A2   //PS3
+#define srSensorLeft1 A3    //PS4
+#define srSensorLeft2 A4    //PS5
+#define lrSensorRight1 A5   //PS6
+#define SRSensor_Model 1080
+#define LRSensor_Model 20150
 
 // Initialisation
 DualVNH5019MotorShield md;
-SharpIR SRSensorFront1(SharpIR:: GP2Y0A21YK0F, srSensorFront1);
-SharpIR SRSensorFront2(SharpIR:: GP2Y0A21YK0F, srSensorFront2);
-SharpIR SRSensorLeft1(SharpIR:: GP2Y0A21YK0F, srSensorLeft1);
-SharpIR SRSensorLeft2(SharpIR:: GP2Y0A21YK0F, srSensorLeft2);
-SharpIR LRSensorRight1(SharpIR:: GP2Y0A02YK0F, lrSensorRight1);
+
+// SharpIR-Master Initialisation
+SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 4928.71, 4.62709, -48.6083);
+SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 16093.6, 14.4371, 157.702);
+SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 3840.37, 2.36529, -105.74);
+SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 13483.7, 11.9145, 135.046);
+SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 14166.9, 12.3137, 139.664);
+SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 10237000, 1034.72, 9211.97);
 
 // Parameters Declaration
 // PID Calculation
@@ -85,16 +92,14 @@ int setpoint = 80;
 // Robot Movement
 // Sensors
 int counter = 0;
-double srSensorFront1Distance = 0;
-double srSensorFront2Distance = 0;
-double srSensorLeft1Distance = 0;
-double srSensorLeft2Distance = 0;
-double lrSensorRight1Distance = 0;
-RunningMedian srSensorFront1DistanceRM = RunningMedian(10);
-RunningMedian srSensorFront2DistanceRM = RunningMedian(10);
-RunningMedian srSensorLeft1DistanceRM = RunningMedian(10);
-RunningMedian srSensorLeft2DistanceRM = RunningMedian(10);
-RunningMedian lrSensorRight1DistanceRM = RunningMedian(10);
+int sensorSampleSize = 50;
+RunningMedian srSensorFront1DistanceRM = RunningMedian(sensorSampleSize);
+RunningMedian srSensorFront2DistanceRM = RunningMedian(sensorSampleSize);
+RunningMedian srSensorFront3DistanceRM = RunningMedian(sensorSampleSize);
+RunningMedian srSensorLeft1DistanceRM = RunningMedian(sensorSampleSize);
+RunningMedian srSensorLeft2DistanceRM = RunningMedian(sensorSampleSize);
+RunningMedian lrSensorRight1DistanceRM = RunningMedian(sensorSampleSize);
+RunningMedian analogReadings = RunningMedian(sensorSampleSize);
 // Other Parameters
 boolean startupFlag = true;
 boolean flag = true;
@@ -106,23 +111,28 @@ void setup()
   md.init();
   pinMode(motorEncoderLeft1, INPUT);
   pinMode(motorEncoderRight1, INPUT);
-  pinMode(srSensorFront1, INPUT);
-  pinMode(srSensorFront2, INPUT);
-  pinMode(srSensorLeft1, INPUT);
-  pinMode(srSensorLeft2, INPUT);
-  pinMode(lrSensorRight1, INPUT);
   PCintPort::attachInterrupt(motorEncoderLeft1, leftEncoderInc, RISING);
   PCintPort::attachInterrupt(motorEncoderRight1, rightEncoderInc, RISING);
 }
 
 void loop()
 {
-  Serial.println("===== Testing Sensors =====");
-  Serial.println("===== Average Method (Sample Size 10) =====");
-  getSensorsDistance(10);
-  Serial.println("===== Median Method =====");
-  getSensorsDistanceRM(10);
-  delay(1000); // 1 second delay
+  Serial.println("");
+  //getSensorsDistanceRM(sensorSampleSize);
+  getSensorsVoltageRM(sensorSampleSize);
+  //Serial.print(round(SRSensorFront1.distance()/10));
+  //Serial.print(" | ");
+  //Serial.print(round(SRSensorFront2.distance()/10));
+  //Serial.print(" | ");
+  //Serial.print(round(SRSensorFront3.distance()/10));
+  //Serial.print(" | ");
+  //Serial.print(round(SRSensorLeft1.distance()/10));
+  //Serial.print(" | ");
+  //Serial.print(round(SRSensorLeft2.distance()/10));
+  //Serial.print(" | ");
+  //Serial.print(round(LRSensorRight1.distance()/10));
+  Serial.println("");
+  delay(1000);
 }
 
 // ==================== PID Calculation ====================
@@ -230,152 +240,52 @@ void restartPID() {
 
 // ==================== Sensors ====================
 
-void getSensorsDistance(int n)
+void getSensorsVoltageRM(int n)
 {
-  Serial.print("|");
-  Serial.print(getSRSensorFront1Distance(n));
-  Serial.print("|");
-  Serial.print(getSRSensorFront2Distance(n));
-  Serial.print("|");
-  Serial.print(getSRSensorLeft1Distance(n));
-  Serial.print("|");
-  Serial.print(getSRSensorLeft2Distance(n));
-  Serial.print("|");
-  Serial.print(getLRSensorRight1Distance(n));
-  Serial.println("|");
+  counter = 0;
+  analogReadings.clear();
+  for (counter = 0; counter < n; counter++) {
+    analogReadings.add(analogRead(srSensorFront1));
+    //analogReadings.add(analogRead(srSensorFront2));
+    //analogReadings.add(analogRead(srSensorFront3));
+    //analogReadings.add(analogRead(srSensorLeft1));
+    //analogReadings.add(analogRead(srSensorLeft2));
+    //analogReadings.add(analogRead(lrSensorRight1));
+  }
+  Serial.print("Median = ");
+  Serial.println(analogReadings.getMedian());
+  Serial.print("Average = ");
+  Serial.println(analogReadings.getAverage(25));
 }
 
 void getSensorsDistanceRM(int n)
 {
-  Serial.print("|");
-  Serial.print(getSRSensorFront1DistanceRM(n));
-  Serial.print("|");
-  Serial.print(getSRSensorFront2DistanceRM(n));
-  Serial.print("|");
-  Serial.print(getSRSensorLeft1DistanceRM(n));
-  Serial.print("|");
-  Serial.print(getSRSensorLeft2DistanceRM(n));
-  Serial.print("|");
-  Serial.print(getLRSensorRight1DistanceRM(n));
-  Serial.println("|");
-}
-
-// ==================== getSRSensorFront1Distance() ====================
-double getSRSensorFront1Distance(int n)
-{
-  // Average Method
-  counter = 0;
-  srSensorFront1Distance = 0;
-  for (counter = 0; counter < n; counter++) {
-    srSensorFront1Distance += srSensorFront1.getDistance();
-  }
-  srSensorFront1Distance = srSensorFront1Distance / n;
-  return srSensorFront1Distance;
-}
-
-float getSRSensorFront1DistanceRM(int n)
-{
-  // Median Method
   counter = 0;
   srSensorFront1DistanceRM.clear();
-  for (counter = 0; counter < n; counter++) {
-    srSensorFront1DistanceRM.add(srSensorFront1.getDistance());
-  }
-  return srSensorFront1DistanceRM.getMedian();
-}
-
-// ==================== getSRSensorFront2Distance() ====================
-double getSRSensorFront2Distance(int n)
-{
-  // Average Method
-  counter = 0;
-  srSensorFront2Distance = 0;
-  for (counter = 0; counter < n; counter++) {
-    srSensorFront2Distance += srSensorFront2.getDistance();
-  }
-  srSensorFront2Distance = srSensorFront2Distance / n;
-  return srSensorFront2Distance;
-}
-
-float getSRSensorFront2DistanceRM(int n)
-{
-  // Median Method
-  counter = 0;
   srSensorFront2DistanceRM.clear();
-  for (counter = 0; counter < n; counter++) {
-    srSensorFront2DistanceRM.add(srSensorFront2.getDistance());
-  }
-  return srSensorFront2DistanceRM.getMedian();
-}
-
-// ==================== getSRSensorLeft1Distance() ====================
-double getSRSensorLeft1Distance(int n)
-{
-  // Average Method
-  counter = 0;
-  srSensorLeft1Distance = 0;
-  for (counter = 0; counter < n; counter++) {
-    srSensorLeft1Distance += srSensorLeft1.getDistance();
-  }
-  srSensorLeft1Distance = srSensorLeft1Distance / n;
-  return srSensorLeft1Distance;
-}
-
-float getSRSensorLeft1DistanceRM(int n)
-{
-  // Median Method
-  counter = 0;
+  srSensorFront3DistanceRM.clear();
   srSensorLeft1DistanceRM.clear();
-  for (counter = 0; counter < n; counter++) {
-    srSensorLeft1DistanceRM.add(srSensorLeft1.getDistance());
-  }
-  return srSensorLeft1DistanceRM.getMedian();
-}
-
-// ==================== getSRSensorLeft2Distance() ====================
-double getSRSensorLeft2Distance(int n)
-{
-  // Average Method
-  counter = 0;
-  srSensorLeft2Distance = 0;
-  for (counter = 0; counter < n; counter++) {
-    srSensorLeft2Distance += srSensorLeft2.getDistance();
-  }
-  srSensorLeft2Distance = srSensorLeft2Distance / n;
-  return srSensorLeft2Distance;
-}
-
-float getSRSensorLeft2DistanceRM(int n)
-{
-  // Median Method
-  counter = 0;
   srSensorLeft2DistanceRM.clear();
-  for (counter = 0; counter < n; counter++) {
-    srSensorLeft2DistanceRM.add(srSensorLeft2.getDistance());
-  }
-  return srSensorLeft2DistanceRM.getMedian();
-}
-
-// ==================== getLRSensorRight1Distance() ====================
-double getLRSensorRight1Distance(int n)
-{
-  // Average Method
-  counter = 0;
-  lrSensorRight1Distance = 0;
-  for (counter = 0; counter < n; counter++) {
-    lrSensorRight1Distance += lrSensorRight1.getDistance();
-  }
-  lrSensorRight1Distance = lrSensorRight1Distance / n;
-  return lrSensorRight1Distance;
-}
-
-float getLRSensorRight1DistanceRM(int n)
-{
-  // Median Method
-  counter = 0;
   lrSensorRight1DistanceRM.clear();
   for (counter = 0; counter < n; counter++) {
-    lrSensorRight1DistanceRM.add(lrSensorRight1.getDistance());
+    srSensorFront1DistanceRM.add(SRSensorFront1.distance());
+    srSensorFront2DistanceRM.add(SRSensorFront2.distance());
+    srSensorFront3DistanceRM.add(SRSensorFront3.distance());
+    srSensorLeft1DistanceRM.add(SRSensorLeft1.distance());
+    srSensorLeft2DistanceRM.add(SRSensorLeft2.distance());
+    lrSensorRight1DistanceRM.add(LRSensorRight1.distance());
   }
-  return lrSensorRight1DistanceRM.getMedian();
+  Serial.print("| ");
+  Serial.print(srSensorFront1DistanceRM.getMedian());
+  Serial.print(" | ");
+  Serial.print(srSensorFront2DistanceRM.getMedian());
+  Serial.print(" | ");
+  Serial.print(srSensorFront3DistanceRM.getMedian());
+  Serial.print(" | ");
+  Serial.print(srSensorLeft1DistanceRM.getMedian());
+  Serial.print(" | ");
+  Serial.print(srSensorLeft2DistanceRM.getMedian());
+  Serial.print(" | ");
+  Serial.print(lrSensorRight1DistanceRM.getMedian());
+  Serial.println(" |");
 }
