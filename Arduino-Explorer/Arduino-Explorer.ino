@@ -102,7 +102,8 @@ void loop() {
   if (Serial.available() > 0)
   {
     cc = char(Serial.read());
-    readRobotCommands(cc); 
+    RpiTest(cc);
+//    readRobotCommands(cc); 
   }
 //  goStraightOneTime();
 }
