@@ -257,24 +257,40 @@ void PIDCalculation(float kpLeftME, float kiLeftME, float kdLeftME, float kpRigh
   previousErrorRightME = errorRightME;
 
   // Restart PID if Needed
-  if (PIDOutputLeftME > 4 || PIDOutputRightME > 4) {
-    restartPID();
+//  if (PIDOutputLeftME > 4 || PIDOutputRightME > 4) {
+//    restartPID();
+//  }
+
+  // Restart PID if Needed
+  if (PIDOutputLeftME > 4) {
+      restartLeftPID();
+    }
+  if (PIDOutputRightME > 4) {
+    restartRightPID();
   }
 }
 
 void restartPID() {
-  RPMLeft = 0;
-  RPMRight = 0;
+  restartLeftPID();
+  restartRightPID();
+}
+
+void restartLeftPID() {
   PIDOutputLeftME = 0;
-  PIDOutputRightME = 0;
   previousPIDOutputLeftME = 0;
-  previousPIDOutputRightME = 0;
-  errorLeftME = 0;
-  previousErrorLeftME = 0;
   previousPreviousErrorLeftME = 0;
-  errorRightME = 0;
-  previousErrorRightME = 0;
+  previousErrorLeftME = 0;
+  errorLeftME = 0;
+  RPMLeft = 0;
+}
+
+void restartRightPID(){
+  PIDOutputRightME = 0;
+  previousPIDOutputRightME = 0;
   previousPreviousErrorRightME = 0;
+  previousErrorRightME = 0;
+  errorRightME = 0;
+  RPMRight = 0;
 }
 
 // ==================== Robot Movement ====================
@@ -285,7 +301,7 @@ void goStraight1Grid()
   totalDistance = 0;
   while (1) {
     if (totalDistance >= oneGridDistance) {
-      md.setBrakes(400, 400);
+      md.setBrakes(375, 375);
       break;
     } else {
       //moveForward();
@@ -479,3 +495,85 @@ void avoidObstacle()
     }
   }
 }
+
+/*
+// ==================== Robot Calibrate Orientation ====================
+
+void frontWallCalibrate(){
+  if(SRSensorFront1.distance() <= 35 and SRSensorFront3.distance() <= 35){
+    double diff = SRSensorFront1.distance() - SRSensorFront3.distance();
+  
+    if(diff > 0.1 and diff < 9)
+    {
+      while(diff > 0.5){ // some certain difference when it rotates,
+        calibrateTurnLeft(0.0002); // turn slowly everytime until the diff is <= 0.5
+        diff = SRSensorFront1.distance() - SRSensorFront3.distance();
+        delay(30);
+      }
+    }
+    else if(diff < -0.1 and diff > -9){
+      while(diff < -0.5){ // turn slowly everytime until the diff is >= -0.5
+        calibrateTurnRight(0.0002);
+        diff = SRSensorFront1.distance() - SRSensorFront3.distance();
+        delay(30);
+      }
+    }
+  }
+}
+
+void leftWallCalibrate(){
+  double diff = SRSensorLeft1.distance() - SRSensorLeft2.distance(); // will be in cm
+
+  if(diff > 0.1 and diff < 9)
+  {
+    while(diff > 0.5){ // some certain difference when it rotates,
+      calibrateTurnLeft(0.0002); // turn slowly everytime until the diff is <= 0.5
+      diff = SRSensorLeft1.distance() - SRSensorLeft2.distance();
+      delay(30);
+    }
+  }
+  else if(diff < -0.1 and diff > -9){
+    while(diff < -0.5){ // turn slowly everytime until the diff is >= -0.5
+      calibrateTurnRight(0.0002);
+      diff = SRSensorLeft1.distance() - SRSensorLeft2.distance();
+      delay(30);
+    }
+  }
+}
+
+void calibrateTurnRight(double n){
+  double totalDis = 0;
+  boolean flag = true;
+  double distanceLimit = 16200 * n;
+  
+  while(1){
+    if (totalDis >= distanceLimit){
+      md.setBrakes(-375, 375);
+      totalDis = 0;
+    }
+    else {
+      md.setSpeeds(-75, 75);
+      totalDis = totalDis + RPMLeft + RPMRight;
+      delayMicroseconds(4230);
+    }
+  }
+}
+
+void calibrateTurnLeft(double n){
+  double totalDis = 0;
+  boolean flag = true;
+  double distanceLimit = 16200 * n;
+  
+  while(1){
+    if (totalDis >= distanceLimit){
+      md.setBrakes(375, -375);
+      totalDis = 0;
+    }
+    else {
+      md.setSpeeds(75, -75);
+      totalDis = totalDis + RPMLeft + RPMRight;
+      delayMicroseconds(4230);
+    }
+  }
+}
+*/
