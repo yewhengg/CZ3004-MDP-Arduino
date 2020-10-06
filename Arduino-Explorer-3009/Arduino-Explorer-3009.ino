@@ -21,7 +21,7 @@
 // https://github.com/qub1750ul/Arduino_SharpIR
 //#include <SharpIR.h>
 // https://github.com/guillaume-rico/SharpIR
-#include <SharpIR.h>
+#include "SharpIR.h"
 
 // Pin Interrupt Library
 // https://github.com/NicoHood/PinChangeInterrupt
@@ -48,12 +48,12 @@ DualVNH5019MotorShield md;
 
 // SharpIR-Master Initialisation
 //SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 4515.65, 2.996686, -69.1807);
-SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 3970.01, 1.35131, -71.8837);
-SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 2951.5, -10.0054, -54.791);
-SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 3840.37, 2.36529, -105.74);
-SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 13483.7, 11.9145, 135.046);
-SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 14166.9, 12.3137, 139.664);
-SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 10237000, 1034.72, 9211.97);
+SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 5629.78, 9.269, -20.419);
+SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 11680.9, 14.505, 121.366);
+SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5482.45, 9.396, -19.069);
+SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 6852.53, 9.900, 16.1893);
+SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 8273.7, 11.014, 63.616);
+SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 24845.1, 21.719, 212.088); // original was b = 20.719
 
 // Parameters Declaration
 // PID Calculation
@@ -111,6 +111,9 @@ double srSensorLeft1Distance = 0;
 double srSensorLeft2Distance = 0;
 double lrSensorRight1Distance = 0;
 RunningMedian analogReadings = RunningMedian(sensorSampleSize);
+RunningMedian analogReadings2 = RunningMedian(sensorSampleSize);
+RunningMedian analogReadings3 = RunningMedian(sensorSampleSize);
+
 // Other Parameters
 String cc = "";
 boolean explorationFlag = false;
@@ -128,6 +131,7 @@ void setup()
 
 void loop()
 {
+  //md.setSpeeds(150,150);
   //Serial.println("===== loop() =====");
   if (Serial.available() > 0) {
     cc = char(Serial.read());
@@ -139,10 +143,9 @@ void loop()
       //fastestPath();
     }
   }
-  //Serial.println("");
-  //getSensorsVoltageRM(sensorSampleSize);
-  //delay(2000);
-  //getSensorsDistanceRM(sensorSampleSize);
+//  getSensorsVoltageRM(sensorSampleSize);
+//  delay(2000);
+//  getSensorsDistanceRM(sensorSampleSize);
 }
 
 // ==================== Modes ====================
@@ -257,17 +260,17 @@ void PIDCalculation(float kpLeftME, float kiLeftME, float kdLeftME, float kpRigh
   previousErrorRightME = errorRightME;
 
   // Restart PID if Needed
-//  if (PIDOutputLeftME > 4 || PIDOutputRightME > 4) {
-//    restartPID();
-//  }
+  if (PIDOutputLeftME > 4 || PIDOutputRightME > 4) {
+    restartPID();
+  }
 
   // Restart PID if Needed
-  if (PIDOutputLeftME > 4) {
-      restartLeftPID();
-    }
-  if (PIDOutputRightME > 4) {
-    restartRightPID();
-  }
+//  if (PIDOutputLeftME > 4) {
+//      restartLeftPID();
+//    }
+//  if (PIDOutputRightME > 4) {
+//    restartRightPID();
+//  }
 }
 
 void restartPID() {
@@ -304,11 +307,21 @@ void goStraight1Grid()
       md.setBrakes(375, 375);
       break;
     } else {
-      //moveForward();
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 250, PIDOutputLeftME * 250);
+      moveForward();
+      //PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+      //md.setSpeeds(-PIDOutputRightME * 250, -PIDOutputLeftME * 250);
       totalDistance = totalDistance + RPMLeft + RPMRight;
       delayMicroseconds(4230);
+      
+//      Serial.print("RPM Left");
+//      Serial.println(RPMLeft);
+//      Serial.print("RPM Right");
+//      Serial.println(RPMRight);
+
+      Serial.print("Left PID");
+      Serial.println(PIDOutputLeftME);
+      Serial.print("Right PID");
+      Serial.println(PIDOutputRightME);
     }
   }
 }
@@ -317,7 +330,7 @@ void moveForward()
 {
   //Serial.println("===== moveForward() =====");
   PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-  md.setSpeeds(PIDOutputRightME * 250, PIDOutputLeftME * 250);
+  md.setSpeeds(PIDOutputRightME * 100, PIDOutputLeftME * 100);
   delayMicroseconds(6000);
 }
 
@@ -379,24 +392,38 @@ void turnRight90Degrees(double n)
   }
 }
 
-// ==================== Sensors ====================
+// ==================== SensorSs ====================
 
 void getSensorsVoltageRM(int n)
 {
   counter = 0;
   analogReadings.clear();
+  analogReadings2.clear();
+  analogReadings3.clear();
   for (counter = 0; counter < n; counter++) {
-    //analogReadings.add(analogRead(srSensorFront1));
-    analogReadings.add(analogRead(srSensorFront2));
-    //analogReadings.add(analogRead(srSensorFront3));
-    //analogReadings.add(analogRead(srSensorLeft1));
-    //analogReadings.add(analogRead(srSensorLeft2));
-    //analogReadings.add(analogRead(lrSensorRight1));
+    analogReadings.add(analogRead(srSensorFront1));
+    analogReadings2.add(analogRead(srSensorFront2));
+    analogReadings3.add(analogRead(srSensorFront3));
+//    analogReadings.add(analogRead(srSensorLeft1));
+//    analogReadings2.add(analogRead(srSensorLeft2));
+//    analogReadings.add(analogRead(srSensorLeft2));
+//    analogReadings.add(analogRead(lrSensorRight1));
   }
+  /*
   Serial.print("Median = ");
   Serial.println(analogReadings.getMedian());
-  //Serial.print("Average = ");
-  //Serial.println(analogReadings.getAverage(10));
+  Serial.println("---");
+  Serial.println(analogReadings2.getMedian());
+  Serial.println("---");
+  Serial.println(analogReadings3.getMedian());
+  
+  Serial.print("Average = ");
+  Serial.println(analogReadings.getAverage(10));
+  Serial.println("---");
+  Serial.println(analogReadings2.getAverage(10));
+  Serial.println("---");
+  Serial.println(analogReadings3.getAverage(10));
+  */
 }
 
 void getSensorsDistanceRM(int n)
@@ -496,7 +523,7 @@ void avoidObstacle()
   }
 }
 
-/*
+
 // ==================== Robot Calibrate Orientation ====================
 
 void frontWallCalibrate(){
@@ -576,4 +603,3 @@ void calibrateTurnLeft(double n){
     }
   }
 }
-*/
