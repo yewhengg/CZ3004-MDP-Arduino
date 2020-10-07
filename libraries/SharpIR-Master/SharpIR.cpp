@@ -43,5 +43,5 @@ int SharpIR::distance() const {
 	}
 	distance = (_m / (irValue + _k)) - _b;
 	// distance = (_m / (irValue + _b)) - _k;
-	return round(distance * 10);
+	return distance;
 }
