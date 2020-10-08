@@ -660,16 +660,17 @@ void calibrateLeftAngle()
 //  }
 //}
 
+// value change to cm
 void calibrateLeftDistance()
 {
 //  if ((SRSensorLeft1.distance() <= 45 && SRSensorLeft2.distance() <= 45) || (SRSensorLeft1.distance() > 70 && SRSensorLeft2.distance() > 70))
-  if ((SRSensorLeft1.distance() <= 45 && SRSensorLeft2.distance() <= 45))
+  if ((SRSensorLeft1.distance() <= 4.5 && SRSensorLeft2.distance() <= 4.5))
   {
     restartPID();
     turnLeftOneGrid();
     delayMicroseconds(5000);
-    // change && to ||
-    while (SRSensorFront1.distance() < 60 || SRSensorFront2.distance() < 60 || SRSensorFront3.distance() < 60)
+    // too close to wall
+    while (SRSensorFront1.distance() < 6 || SRSensorFront2.distance() < 6 || SRSensorFront3.distance() < 6)
     {
       restartPID();
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 80);
@@ -681,13 +682,14 @@ void calibrateLeftDistance()
     restartPID();
     turnRightOneGrid();
   }
-  else if ((SRSensorLeft1.distance() >= 70 && SRSensorLeft1.distance() <= 200) && (SRSensorLeft2.distance() >= 70 && SRSensorLeft2.distance() <= 120))
+  // ?????
+  else if ((SRSensorLeft1.distance() >= 7 && SRSensorLeft1.distance() <= 20) && (SRSensorLeft2.distance() >= 7 && SRSensorLeft2.distance() <= 12))
   {
     restartPID();
     turnLeftOneGrid();
     delayMicroseconds(5000);
     // change SRSensorFront2.distance() < 7 to SRSensorFront2.distance() > 7
-    while (SRSensorFront2.distance() > 65 || SRSensorFront3.distance() > 65)
+    while (SRSensorFront2.distance() > 6.5 || SRSensorFront3.distance() > 6.5)
     {
       restartPID();
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 80);
