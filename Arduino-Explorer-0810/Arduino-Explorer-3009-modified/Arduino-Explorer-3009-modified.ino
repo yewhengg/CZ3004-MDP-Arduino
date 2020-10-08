@@ -74,9 +74,9 @@ unsigned int turnGridDistance = 14285;
 unsigned int distance = 0;
 unsigned int totalDistance = 0;
 // Sensors
- float Front1_RANGE[3] = {13, 17, 25}; // INITIALLY ALL[0] 10
- float Front2_RANGE[3] = {13, 17, 25};
- float Front3_RANGE[3] = {13, 17, 25};
+ float Front1_RANGE[3] = {12, 17, 25}; // INITIALLY ALL[0] 10
+ float Front2_RANGE[3] = {12, 17, 25};
+ float Front3_RANGE[3] = {12, 17, 25};
  float Left1_RANGE[3] = {13, 17, 25};
  float Left2_RANGE[3] = {13, 17, 25};
  float Right1_RANGE[3] = {13, 17, 25};
@@ -662,8 +662,9 @@ void calibrateLeftDistance()
     while (SRSensorFront1.distance() < 6 || SRSensorFront2.distance() < 6 || SRSensorFront2.distance() < 6)
     {
       restartPID();
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(-PIDOutputRightME * 50, -PIDOutputLeftME * 50);
+//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+//      md.setSpeeds(-PIDOutputRightME * 50, -PIDOutputLeftME * 50);
+      md.setSpeeds(-75,-75);
       delayMicroseconds(5000);
     }
     delayMicroseconds(5000);
@@ -679,8 +680,9 @@ void calibrateLeftDistance()
     while (SRSensorFront1.distance() > 7 && SRSensorFront2.distance() > 7)
     {
       restartPID();
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 50, PIDOutputLeftME * 50);
+//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+//      md.setSpeeds(PIDOutputRightME * 50, PIDOutputLeftME * 50);
+      md.setSpeeds(75,75);
       delayMicroseconds(5000);
     }
     delayMicroseconds(5000);
