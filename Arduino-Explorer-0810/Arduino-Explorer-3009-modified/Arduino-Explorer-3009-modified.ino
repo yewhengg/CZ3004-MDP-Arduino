@@ -69,7 +69,7 @@ float PIDOutputRightME = 0;
 float previousPIDOutputRightME = 0;
 int setpoint = 80;
 // Robot Movement
-unsigned int oneGridDistance = 10000; // 10800;  //10500
+unsigned int oneGridDistance = 10100; // 10800;  //10500
 unsigned int turnGridDistance = 14285; 
 unsigned int distance = 0;
 unsigned int totalDistance = 0;
@@ -161,7 +161,7 @@ void exploration()
       if ((cc == "150") || (cc == "200"))
       {
         delay_ = cc.toInt();
-      }else if( (cc == "10300") || (cc == "10200") || (cc == "10000") || (cc == "9800"))
+      }else if( (cc == "10300") || (cc == "10250")|| (cc == "10200") || (cc == "10150")|| (cc == "10100") || (cc == "10050")|| (cc == "10000") )
       {
         oneGridDistance = cc.toInt();
       }
@@ -444,7 +444,7 @@ void getSensorsDistanceRM(int n)
   // tune sensor range
   float Front1_RANGE[3] = {13, 17, 25}; // INITIALLY ALL[0] 10
   float Front2_RANGE[3] = {13, 17, 25};
-  float Front3_RANGE[3] = {13, 17, 25};
+  float Front3_RANGE[3] = {12, 17, 25}; // initially [0] = 13
   float Left1_RANGE[3] = {13, 17, 25};
   float Left2_RANGE[3] = {13, 17, 25};
   float Right1_RANGE[3] = {13, 17, 25};
@@ -626,22 +626,23 @@ void calibrateTurnLeft(double n)
 void calibrateLeftAngle()
 {
   calibrationError = SRSensorLeft1.distance() - SRSensorLeft2.distance();
-  if (SRSensorLeft1.distance() < 12 && SRSensorLeft2.distance() < 12)
+  if (SRSensorLeft1.distance() < 120 && SRSensorLeft2.distance() < 120)
   {
-    if (calibrationError > 1 && calibrationError < 9)
+    if (calibrationError > 1 && calibrationError < 10)
     {
       // Should add a counter here to avoid infinite loop .......
-      while (calibrationError > 4)
+      
+      while (calibrationError > 5)
       {
         calibrateTurnLeft(0.05);
         calibrationError = SRSensorLeft1.distance() - SRSensorLeft2.distance();
         delayMicroseconds(5000);
       }
     }
-    else if (calibrationError < -1 && calibrationError > -9)
+    else if (calibrationError < -1 && calibrationError > -10)
     {
       // Should add a counter here .......
-      while (calibrationError < -4)
+      while (calibrationError < -5)
       {
         calibrateTurnRight(0.05);
         calibrationError = SRSensorLeft1.distance() - SRSensorLeft2.distance();
@@ -651,38 +652,47 @@ void calibrateLeftAngle()
   }
 }
 
+//void frontCalibrate()
+//{
+//  calibrationError = SRSensorFront1.distance() - SRSensorFront3.distance()
+//  if((SRSensorFront1.distance() < 120 || SRSensorFront3.distance() < 120)){
+//    if(calibrationError)
+//  }
+//}
+
 void calibrateLeftDistance()
 {
-  if (SRSensorLeft1.distance() < 5 && SRSensorLeft2.distance() < 5)
+//  if ((SRSensorLeft1.distance() <= 45 && SRSensorLeft2.distance() <= 45) || (SRSensorLeft1.distance() > 70 && SRSensorLeft2.distance() > 70))
+  if ((SRSensorLeft1.distance() <= 45 && SRSensorLeft2.distance() <= 45))
   {
     restartPID();
     turnLeftOneGrid();
     delayMicroseconds(5000);
     // change && to ||
-    while (SRSensorFront1.distance() < 6 || SRSensorFront2.distance() < 6 || SRSensorFront2.distance() < 6)
+    while (SRSensorFront1.distance() < 60 || SRSensorFront2.distance() < 60 || SRSensorFront3.distance() < 60)
     {
       restartPID();
-//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-//      md.setSpeeds(-PIDOutputRightME * 50, -PIDOutputLeftME * 50);
-      md.setSpeeds(-75,-75);
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 80);
+      md.setSpeeds(-PIDOutputRightME * 50, -PIDOutputLeftME * 50);
+//      md.setSpeeds(-75,-75);
       delayMicroseconds(5000);
     }
     delayMicroseconds(5000);
     restartPID();
     turnRightOneGrid();
   }
-  if (SRSensorLeft1.distance() > 7 && SRSensorLeft2.distance() > 7)
+  else if ((SRSensorLeft1.distance() >= 70 && SRSensorLeft1.distance() <= 200) && (SRSensorLeft2.distance() >= 70 && SRSensorLeft2.distance() <= 120))
   {
     restartPID();
     turnLeftOneGrid();
     delayMicroseconds(5000);
     // change SRSensorFront2.distance() < 7 to SRSensorFront2.distance() > 7
-    while (SRSensorFront1.distance() > 7 && SRSensorFront2.distance() > 7)
+    while (SRSensorFront2.distance() > 65 || SRSensorFront3.distance() > 65)
     {
       restartPID();
-//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-//      md.setSpeeds(PIDOutputRightME * 50, PIDOutputLeftME * 50);
-      md.setSpeeds(75,75);
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 80);
+      md.setSpeeds(PIDOutputRightME * 50, PIDOutputLeftME * 50);
+//      md.setSpeeds(75,75);
       delayMicroseconds(5000);
     }
     delayMicroseconds(5000);
