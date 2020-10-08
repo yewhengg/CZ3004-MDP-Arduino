@@ -134,9 +134,7 @@ void setup()
 
 void loop()
 {
-//  leftDistanceCalibrate();
-delay(1500);
-  getSensorsVoltageRM(10);
+  leftDistanceCalibrate();
   if (Serial.available() > 0) {
     cc = char(Serial.read());
     if (cc == "E") {
