@@ -1,18 +1,6 @@
-// Motor Library
-// https://github.com/pololu/dual-vnh5019-motor-shield
 #include "DualVNH5019MotorShield.h"
-// M1 = Right Motor, M2 = Left Motor
-
-// Sensor Library
-// https://github.com/guillaume-rico/SharpIR
 #include "SharpIR.h"
-
-// Pin Interrupt Library
-// https://github.com/NicoHood/PinChangeInterrupt
 #include "PinChangeInt.h"
-
-// Running Median Library
-// https://github.com/RobTillaart/Arduino/tree/master/libraries/RunningMedian
 #include <RunningMedian.h>
 
 // Parameters Definition
@@ -118,6 +106,7 @@ float calibrationAngleError = 0;
 float calibrationAngleThreshold = 1;
 float calibrationDistanceThreshold = 3.5;
 // Others
+String sRead = "";
 String cc = "";
 boolean explorationFlag = false;
 boolean fastestPathFlag = false;
@@ -144,14 +133,8 @@ void setup()
 void loop()
 {
   if (Serial.available() > 0) {
-    cc = char(Serial.read());
-    if (cc == "E") {
       explorationFlag = true;
       exploration();
-    } else if (cc == "F") {
-      fastestPathFlag = true;
-      //fastestPath();
-    }
   }
 }
 
@@ -163,34 +146,67 @@ void exploration()
   getSensorsDistanceRM(sensorSampleSize);
   while (explorationFlag) {
     if (Serial.available() > 0) {
-      cc = char(Serial.read());
-      if (cc == "U") {
+      sRead = Serial.readString();
+      cc = sRead.substring(0,2);
+      sRead = sRead.substring(2);
+       if(cc == "11"){
+        calibrationDistanceThreshold = sRead.toFloat();
+      } else if(cc == "12"){
+        calibrationAngleThreshold = sRead.toFloat();
+      } else if(cc == "13"){
+        calibrationAngleThreshold = sRead.toFloat();
+      } else if(cc == "14"){
+        kpLeftME = sRead.toFloat();
+      } else if(cc == "15"){
+        kiLeftME = sRead.toFloat();
+      } else if(cc == "16"){
+        kdLeftME = sRead.toFloat();
+      } else if(cc == "17"){
+        kpRightME = sRead.toFloat();
+      }else if(cc == "18"){
+        kiRightME = sRead.toFloat();
+      }else if(cc == "19"){
+        kdRightME = sRead.toFloat();
+      }else if(cc == "20"){
+        oneGridDistance = sRead.toInt();
+      }else if(cc == "21"){
+        turnGridDistance = sRead.toInt();
+      }else if(cc == "22"){
+        moveForwardDelay = sRead.toInt();
+      }else if(cc == "23"){
+        turnDelay = sRead.toInt();
+      }else if(cc == "24"){
+        explorationDelay = sRead.toInt();
+      }else if(cc == "25"){
+        calibrationDelay = sRead.toInt();
+      }
+      else if (cc == "UU") {
         goStraightNGrids(1);
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         debugSensorDistance();
-        debugPID();
-        debugDelay();
+        //debugPID();
+        //debugDelay();
         restartPID();
-      } else if (cc == "L") {
+      } else if (cc == "LL") {
         turnLeftOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         debugSensorDistance();
         // print pid value
-        debugPID();
+        //debugPID();
         //print delay time
-        debugDelay();
+        //debugDelay();
         restartPID();
-      } else if (cc == "R") {
+      } else if (cc == "RR") {
         turnRightOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         debugSensorDistance();
-        debugPID();
-        debugDelay();
+       // debugPID();
+        //debugDelay();
         restartPID();
-      } else if (cc == "D") {
+      } else if (cc == "DD") {
         turnRightOneGrid();
         delay(explorationDelay);
         restartPID();
@@ -198,37 +214,18 @@ void exploration()
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         restartPID();
-      } else if (cc == "Z") {
+      } else if (cc == "ZZ") {
         getSensorsVoltageRM(sensorSampleSize);
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         debugSensorDistance();
-      } else if (cc == "#") {
+      } else if (cc == "##") {
         explorationFlag = false;
         delay(explorationDelay);
         return;
+      }
       // ===== Debug (To Remove) ===== 
-      } else if (cc == "F") {  // Debug moveForwardDelay
-        int debugValue = Serial.read();
-        moveForwardDelay = debugValue;
-        delay(explorationDelay);
-        debugDelay();
-      } else if (cc == "T") {  // Debug turnDelay
-        int debugValue = Serial.read();
-        turnDelay = debugValue;
-        delay(explorationDelay);
-        debugDelay();
-      } else if (cc == "X") {   // Debug explorationDelay
-        int debugValue = Serial.read();
-        explorationDelay = debugValue;
-        delay(explorationDelay);
-        debugDelay();
-      } else if (cc == "C") {    // Debug calibrationDelay
-        int debugValue = Serial.read();
-        calibrationDelay = debugValue;
-        delay(explorationDelay);
-        debugDelay();
-      } else if (cc == "G") {
+      else if (cc == "CC") {
         calibrateFrontAngle();
         // calibrateLeftWall();
       }
