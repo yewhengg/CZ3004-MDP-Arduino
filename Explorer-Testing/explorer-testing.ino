@@ -107,7 +107,7 @@ float leftSensor2ToWall = 0;
 float calibrationAngleError = 0;
 float calibrationLeftAngleThreshold = 1;
 float calibrationFrontAngleThreshold = 1;
-float calibrationDistanceThreshold = 3.5;
+float calibrationDistanceThreshold = 60;
 
 // Others
 String sRead = "";
@@ -547,10 +547,9 @@ void calibrateFrontDistance()
 {
   frontSensor1ToWall = 0;
   frontSensor3ToWall = 0;
-  while (1) {
     frontSensor1ToWall = SRSensorFront1.distance();
     frontSensor3ToWall = SRSensorFront3.distance();
-    while (frontSensor1ToWall > calibrationDistanceThreshold && frontSensor3ToWall > calibrationDistanceThreshold) {
+    if((frontSensor1ToWall > calibrationDistanceThreshold && frontSensor1ToWall < calibrationDistanceThreshold > calibrationDistanceThreshold)) {
       restartPID();
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
       md.setSpeeds(PIDOutputRightME * 60, PIDOutputLeftME * 60);
@@ -559,7 +558,7 @@ void calibrateFrontDistance()
       frontSensor1ToWall = SRSensorFront1.distance();
       frontSensor3ToWall = SRSensorFront3.distance();
     }
-    if (frontSensor1ToWall < calibrationDistanceThreshold && frontSensor3ToWall < calibrationDistanceThreshold) {
+    else if (frontSensor1ToWall < calibrationDistanceThreshold && frontSensor3ToWall < calibrationDistanceThreshold) {
       restartPID();
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
       md.setSpeeds(-PIDOutputRightME * 60, -PIDOutputLeftME * 60);
@@ -568,7 +567,7 @@ void calibrateFrontDistance()
     } else {
       break;
     }
-  }
+`calibrateFrontAngle();
 }
 
 void calibrateFrontAngle()

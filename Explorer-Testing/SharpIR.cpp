@@ -33,7 +33,7 @@ int SharpIR::getRaw() const {
 	return irValue[sampleSize / 2];
 }
 
-int SharpIR::distance() const {
+double SharpIR::distance() const {
 	int irValue = getRaw();
 	double distance = 0;
 	if (_model == GP2Y0A21YK0F && irValue < SRVMin) {
@@ -42,5 +42,5 @@ int SharpIR::distance() const {
 		irValue = LRVMin ;
 	}
 	distance = (_m / (irValue + _k)) - _b;
-	return round(distance * 10);
+	return distance;
 }
