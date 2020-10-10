@@ -578,7 +578,7 @@ void calibrateFrontAngle()
   frontSensor1ToWall = SRSensorFront1.distance();
   frontSensor3ToWall = SRSensorFront3.distance();
   calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
-  if(frontSensor1ToWall <= 120 && frontSensor3ToWall <= 120){
+  if(frontSensor1ToWall <= 12 && frontSensor3ToWall <= 12){
     if(calibrationAngleError >= calibrationFrontAngleThreshold){
       while(calibrationAngleError >= calibrationFrontAngleThreshold)
         calibrateTurnRight(0.05);
@@ -609,7 +609,7 @@ void calibrateLeftAngle()
   leftSensor1ToWall = SRSensorLeft1.distance();
   leftSensor2ToWall = SRSensorLeft2.distance();
   calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
-  if(leftSensor1ToWall <= 120 && leftSensor2ToWall <= 120){
+  if(leftSensor1ToWall <= 12 && leftSensor2ToWall <= 12){
     if(calibrationAngleError >= calibrationLeftAngleThreshold){
       while(calibrationAngleError >= calibrationLeftAngleThreshold)
         calibrateTurnRight(0.05);
@@ -639,13 +639,13 @@ void calibrateLeftDistance()
   frontSensor3ToWall = 0;
   leftSensor1ToWall = SRSensorLeft1.distance();
   leftSensor2ToWall = SRSensorLeft2.distance();
-  if ((leftSensor1ToWall > 0 && leftSensor2ToWall > 0) && (leftSensor1ToWall < 50 && leftSensor2ToWall < 50))
+  if ((leftSensor1ToWall > 0 && leftSensor2ToWall > 0) && (leftSensor1ToWall < 5 && leftSensor2ToWall < 5))
   {
     turnLeftOneGrid();
     frontSensor1ToWall = SRSensorFront1.distance();
     frontSensor3ToWall = SRSensorFront3.distance();
 
-    while(frontSensor1ToWall <= 45 || frontSensor3ToWall <= 45){
+    while(frontSensor1ToWall <= 4.5 || frontSensor3ToWall <= 4.5){
       md.setSpeeds(-75,-75);
       delayMicroseconds(calibrationDelay);
       frontSensor1ToWall = SRSensorFront1.distance();
@@ -655,12 +655,12 @@ void calibrateLeftDistance()
     delayMicroseconds(calibrationDelay);
     calibrateLeftAngle();
   }
-  else if((leftSensor1ToWall > 50 && leftSensor2ToWall > 50) && (leftSensor1ToWall < 120 && leftSensor2ToWall < 120)){
+  else if((leftSensor1ToWall > 5 && leftSensor2ToWall > 5) && (leftSensor1ToWall < 12 && leftSensor2ToWall < 12)){
     turnLeftOneGrid();
     frontSensor1ToWall = SRSensorFront1.distance();
     frontSensor3ToWall = SRSensorFront3.distance();
 
-    while(frontSensor1ToWall >= 60 || frontSensor3ToWall >=60){
+    while(frontSensor1ToWall >= 6 || frontSensor3ToWall >=6){
       md.setSpeeds(75,75);
       delayMicroseconds(calibrationDelay);
       frontSensor1ToWall = SRSensorFront1.distance();
