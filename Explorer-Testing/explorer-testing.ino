@@ -102,9 +102,12 @@ int lrSensorRight1DistanceOutput = 0;
 // Calibrations
 float frontSensor1ToWall = 0;
 float frontSensor3ToWall = 0;
+float leftSensor1ToWall = 0;
+float leftSensor2ToWall = 0;
 float calibrationAngleError = 0;
 float calibrationAngleThreshold = 1;
 float calibrationDistanceThreshold = 3.5;
+
 // Others
 String sRead = "";
 String cc = "";
@@ -490,15 +493,15 @@ void calibrateFrontSensors(float error)
   delayMicroseconds(1000);
   if (error > calibrationAngleThreshold) {
     restartPID();
-    //PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-    // md.setSpeeds(-PIDOutputRightME * 75, PIDOutputLeftME * 75);
-    md.setSpeeds(-250, 250);
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+     md.setSpeeds(-PIDOutputRightME * 75, PIDOutputLeftME * 75);
+//    md.setSpeeds(-250, 250);
     delay(abs(error * 50));
   } else if (error < -calibrationAngleThreshold) {
     restartPID();
-//    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-//    md.setSpeeds(PIDOutputRightME * 75, -PIDOutputLeftME * 75);
-    md.setSpeeds(250, -250);
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+    md.setSpeeds(PIDOutputRightME * 75, -PIDOutputLeftME * 75);
+//    md.setSpeeds(250, -250);
     delay(abs(error * 50));
   }
 }
@@ -572,31 +575,100 @@ void calibrateFrontAngle()
   frontSensor1ToWall = 0;
   frontSensor3ToWall = 0;
   calibrationAngleError = 0;
-  while (1) {
-    frontSensor1ToWall = SRSensorFront1.distance();
-    frontSensor3ToWall = SRSensorFront3.distance();
-    calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
-    if (abs(calibrationAngleError) <= calibrationAngleThreshold) {
-      break;
+  frontSensor1ToWall = SRSensorFront1.distance();
+  frontSensor3ToWall = SRSensorFront3.distance();
+  calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
+  if(frontSensor1ToWall <= 120 && frontSensor3ToWall <= 120){
+    if(calibrationAngleError >= calibrationAngleThreshold){
+      while(calibrationAngleError >= calibrationAngleThreshold)
+        calibrateTurnRight(0.05);
+        delayMicroseconds(calibrationDelay);
+        frontSensor1ToWall = SRSensorFront1.distance();
+        frontSensor3ToWall = SRSensorFront3.distance();
+        calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
+      }
     }
-    // calibrateFrontDistance();
-    calibrateFrontSensors(calibrationAngleError);
+    else if(calibrationAngleError <= -calibrationAngleThreshold){
+      while(calibrationAngleError <= -calibrationAngleThreshold){
+        calibrateTurnLeft(0.05);
+        delayMicroseconds(calibrationDelay);
+        frontSensor1ToWall = SRSensorFront1.distance();
+        frontSensor3ToWall = SRSensorFront3.distance();
+        calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
+    }
+  }
+  // calibrateFrontDistance();
+  //calibrateFrontSensors(calibrationAngleError);
+}
+
+void calibrateLeftAngle()
+{
+  leftSensor1ToWall = 0;
+  leftSensor2ToWall = 0;
+  calibrationAngleError = 0;
+  leftSensor1ToWall = SRSensorLeft1.distance();
+  leftSensor2ToWall = SRSensorLeft2.distance();
+  calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+  if(leftSensor1ToWall <= 120 && leftSensor2ToWall <= 120){
+    if(calibrationAngleError >= calibrationAngleThreshold){
+      while(calibrationAngleError >= calibrationAngleThreshold)
+        calibrateTurnRight(0.05);
+        delayMicroseconds(calibrationDelay);
+        leftSensor1ToWall = SRSensorLeft1.distance();
+        leftSensor2ToWall = SRSensorLeft2.distance();
+        calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+      }
+    }
+    else if(calibrationAngleError <= -calibrationAngleThreshold){
+      while(calibrationAngleError <= -calibrationAngleThreshold){
+        calibrateTurnLeft(0.05);
+        delayMicroseconds(calibrationDelay);
+        leftSensor1ToWall = SRSensorLeft1.distance();
+        leftSensor2ToWall = SRSensorLeft2.distance();
+        calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+    }
   }
 }
 
-void calibrateLeftWall()
+// Maybe should change the name into calibrateLeftDistance().
+void calibrateLeftDistance()
 {
-  float leftSensor1ToWall = 0;
-  float leftSensor2ToWall = 0;
-  while (1) {
-    leftSensor1ToWall = SRSensorLeft1.distance();
-    leftSensor2ToWall = SRSensorLeft2.distance();
-    while (leftSensor1ToWall < 0 && leftSensor2ToWall < 0) {
-      calibrateFrontAngle();
+  leftSensor1ToWall = 0;
+  leftSensor2ToWall = 0;
+  frontSensor1ToWall = 0;
+  frontSensor3ToWall = 0;
+  leftSensor1ToWall = SRSensorLeft1.distance();
+  leftSensor2ToWall = SRSensorLeft2.distance();
+  if ((leftSensor1ToWall > 0 && leftSensor2ToWall > 0) && (leftSensor1ToWall < 50 && leftSensor2ToWall < 50))
+  {
+    turnLeftOneGrid();
+    frontSensor1ToWall = SRSensorFront1.distance();
+    frontSensor3ToWall = SRSensorFront3.distance();
+
+    while(frontSensor1ToWall <= 45 || frontSensor3ToWall <= 45){
+      md.setSpeeds(-75,-75);
+      delayMicroseconds(calibrationDelay);
+      frontSensor1ToWall = SRSensorFront1.distance();
+      frontSensor3ToWall = SRSensorFront3.distance();
     }
-    if (abs(leftSensor1ToWall - leftSensor2ToWall) < calibrationDistanceThreshold) {
-      break;
+    turnRightOneGrid();
+    delayMicroseconds(calibrationDelay);
+    calibrateLeftAngle();
+  }
+  else if((leftSensor1ToWall > 50 && leftSensor2ToWall > 50) && (leftSensor1ToWall < 120 && leftSensor2ToWall < 120)){
+    turnLeftOneGrid();
+    frontSensor1ToWall = SRSensorFront1.distance();
+    frontSensor3ToWall = SRSensorFront3.distance();
+
+    while(frontSensor1ToWall >= 60 || frontSensor3ToWall >=60){
+      md.setSpeeds(75,75);
+      delayMicroseconds(calibrationDelay);
+      frontSensor1ToWall = SRSensorFront1.distance();
+      frontSensor3ToWall = SRSensorFront3.distance();
     }
+    turnRightOneGrid();
+    delayMicroseconds(calibrationDelay);
+    calibrateLeftAngle();
   }
 }
 
