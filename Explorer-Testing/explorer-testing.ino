@@ -518,7 +518,7 @@ void calibrateTurnLeft(double n)
       break;
     } else {
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 60, -PIDOutputLeftME * 60);
+      md.setSpeeds(PIDOutputRightME * 75, -PIDOutputLeftME * 75);
       delayMicroseconds(4230);
       totalDistance = totalDistance + RPMLeft + RPMRight;
     }
@@ -536,7 +536,7 @@ void calibrateTurnRight(double n)
       break;
     } else {
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(-PIDOutputRightME * 60, PIDOutputLeftME * 60);
+      md.setSpeeds(-PIDOutputRightME * 75, PIDOutputLeftME * 75);
       delayMicroseconds(4230);
       totalDistance = totalDistance + RPMLeft + RPMRight;
     }
@@ -552,7 +552,7 @@ void calibrateFrontDistance()
     if((frontSensor1ToWall > calibrationDistanceThreshold && frontSensor1ToWall < calibrationDistanceThreshold > calibrationDistanceThreshold)) {
       restartPID();
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 60, PIDOutputLeftME * 60);
+      md.setSpeeds(PIDOutputRightME * 75, PIDOutputLeftME * 75);
       delayMicroseconds(10000);
       md.setBrakes(400, 400);
       frontSensor1ToWall = SRSensorFront1.distance();
@@ -561,7 +561,7 @@ void calibrateFrontDistance()
     else if (frontSensor1ToWall < calibrationDistanceThreshold && frontSensor3ToWall < calibrationDistanceThreshold) {
       restartPID();
       PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(-PIDOutputRightME * 60, -PIDOutputLeftME * 60);
+      md.setSpeeds(-PIDOutputRightME * 75, -PIDOutputLeftME * 75);
       delayMicroseconds(10000);
       md.setBrakes(400, 400);
     } else {
