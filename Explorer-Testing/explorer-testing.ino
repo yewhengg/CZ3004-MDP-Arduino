@@ -501,6 +501,187 @@ void getSensorsDistanceRM(int n)
 
 // ==================== Calibration ====================
 
+void calibrateFrontDistance(float offset)
+{
+  frontSensor1ToWall = 0;
+  frontSensor3ToWall = 0;
+  float error;
+  calibrateFrontAngle();
+  while(1) {
+    //Original
+    frontSensor1ToWall = SRSensorFront1.distance() - offset;
+    frontSensor3ToWall = SRSensorFront3.distance() - offset;
+    // 5cm is the target of the distance between obstacle/wall and robot.
+    error = 5.0 - ((frontSensor1ToWall + frontSensor3ToWall) / 2);
+
+    if(frontSensor1ToWall > MIN_DISTANCE_CALIBRATE || 
+       frontSensor3ToWall > MIN_DISTANCE_CALIBRATE) {
+      break;
+     }
+
+    //abort if within margin of error
+    if ((frontSensor3ToWall >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && frontSensor3ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[1]) || 
+        (frontSensor1ToWall >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && frontSensor1ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[1])) {
+      break;
+     }
+
+    if (frontSensor1ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0] || 
+        frontSensor3ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0]) {
+      //reverse normally
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+      md.setSpeeds(PIDOutputRightME * -75, PIDOutputLeftME * -75);
+      delay(abs(error) * 100);  //100
+      md.setBrakes(400, 400);
+    }
+    else if(frontSensor1ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1] || 
+        frontSensor3ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1]) {  
+      //move forward
+      //moveForward(100,0.9);
+      // Serial.println("Moving forwards");
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+      md.setSpeeds(PIDOutputRightME * 75, PIDOutputLeftME * 75);
+      delay(abs(error) * 100);    //100
+      md.setBrakes(400, 400);
+    }
+  }
+  calibrateFrontAngle();
+}
+
+ void calibrateFrontSensorsAngle(float error)
+{
+  delayMicroseconds(1000);
+  if (error > calibrationFrontAngleThreshold) {
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+    md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
+    delay(abs(error * 50));
+    md.setBrakes(400, 400);
+  } else if (error < -calibrationFrontAngleThreshold) {
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+    md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
+    delay(abs(error * 50));
+    md.setBrakes(400, 400);
+  }
+}
+
+void calibrateFrontAngle()
+{
+  int counter = 0;
+  frontSensor1ToWall = 0;
+  frontSensor3ToWall = 0;
+  calibrationAngleError = 0;
+  double angleDist = 0;
+  while(counter < 15){
+    frontSensor1ToWall = SRSensorFront1.distance();
+    frontSensor3ToWall = SRSensorFront3.distance();
+    calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
+    counter++;
+    if(abs(calibrationAngleError) <= calibrationFrontAngleThreshold){
+      break;
+    }
+    calibrateFrontSensorsAngle(calibrationAngleError);
+    md.setBrakes(400,400);
+  }
+}
+
+
+void calibrateLeftDistance()
+{
+  // Function that implement the logic when to turn left 90degree, and then call calibrateFrontDistance. 
+  leftSensor1ToWall = 0;
+  leftSensor2ToWall = 0;
+  leftSensor1ToWall = SRSensorLeft1.distance();
+  leftSensor2ToWall = SRSensorLeft2.distance();
+  float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
+  if(leftSensor1ToWall > MIN_DISTANCE_CALIBRATE ||  leftSensor2ToWall > MIN_DISTANCE_CALIBRATE){
+    return;
+  }
+
+//abort if within margin of error
+  if (diff < 0.9 && ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]))) {
+    return;
+    }
+  if (diff >=0.9 || (leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0]) || (leftSensor1ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1] && leftSensor2ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1])) 
+  {
+    turnLeftOneGrid();
+    calibrateFrontDistance(1.5);
+    delayMicroseconds(calibrationDelay);
+    calibrateFrontAngle();
+    delayMicroseconds(calibrationDelay); 
+    turnRightOneGrid();
+  }
+}
+
+// ==================== Debug (To Remove) ====================
+
+void debugSensorDistance()
+{
+  debugOutput = "d";
+  debugOutput = debugOutput + srSensorFront1Distance + " | " + srSensorFront2Distance + " | " + srSensorFront3Distance + " | " + srSensorLeft1Distance + " | " + srSensorLeft2Distance + " | " + lrSensorRight1Distance;
+  Serial.println(debugOutput);
+}
+
+void debugPID()
+{
+  debugOutput = "d";
+  debugOutput = debugOutput + "Left PID = " + PIDOutputLeftME + " | Right PID = " + PIDOutputRightME;
+  Serial.println(debugOutput);
+}
+
+void debugDelay()
+{
+  debugOutput = "d";
+  debugOutput = debugOutput + "moveForwardDelay = " + moveForwardDelay + " | turnDelay = " + turnDelay + " | explorationDelay = " + explorationDelay + " | calibrationDelay = " + calibrationDelay;
+  Serial.println(debugOutput);
+}
+
+// ==================== Old Calibration Implementation (Save it just in case, remove later) ====================
+/*
+ * void calibrateFrontSensorsAngle(float error)
+{
+  delayMicroseconds(1000);
+  if (error > calibrationFrontAngleThreshold) {
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+    md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
+    delay(abs(error * 50));
+    md.setBrakes(400, 400);
+  } else if (error < -calibrationFrontAngleThreshold) {
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+    md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
+    delay(abs(error * 50));
+    md.setBrakes(400, 400);
+  }
+}
+
+void calibrateLeftAngle()
+{
+  leftSensor1ToWall = 0;
+  leftSensor2ToWall = 0;
+  calibrationAngleError = 0;
+  leftSensor1ToWall = SRSensorLeft1.distance();
+  leftSensor2ToWall = SRSensorLeft2.distance();
+  
+  calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+  if(leftSensor1ToWall <= 12 && leftSensor2ToWall <= 12){
+    if(calibrationAngleError >= calibrationLeftAngleThreshold){
+      while(calibrationAngleError >= calibrationLeftAngleThreshold)
+        calibrateTurnRight(0.05);
+        delayMicroseconds(calibrationDelay);
+        leftSensor1ToWall = SRSensorLeft1.distance();
+        leftSensor2ToWall = SRSensorLeft2.distance();
+        calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+      }
+    }
+    else if(calibrationAngleError <= -calibrationLeftAngleThreshold){
+      while(calibrationAngleError <= -calibrationLeftAngleThreshold){
+        calibrateTurnLeft(0.05);
+        delayMicroseconds(calibrationDelay);
+        leftSensor1ToWall = SRSensorLeft1.distance();
+        leftSensor2ToWall = SRSensorLeft2.distance();
+        calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+    }
+  }
+}
+
 void calibrateFrontSensors(float error)
 {
   delayMicroseconds(1000);
@@ -575,184 +756,4 @@ void calibrateTurnRight(double n)
     }
   }
 }
-
-void calibrateFrontDistance(float offset)
-{
-  frontSensor1ToWall = 0;
-  frontSensor3ToWall = 0;
-  float error;
-  calibrateFrontAngle();
-  while(1) {
-    //Original
-    frontSensor1ToWall = SRSensorFront1.distance() - offset;
-    frontSensor3ToWall = SRSensorFront3.distance() - offset;
-    // 5cm is the target of the distance between obstacle/wall and robot.
-    error = 5.0 - ((frontSensor1ToWall + frontSensor3ToWall) / 2);
-
-    if(frontSensor1ToWall > MIN_DISTANCE_CALIBRATE || 
-       frontSensor3ToWall > MIN_DISTANCE_CALIBRATE) {
-      break;
-     }
-
-    //abort if within margin of error
-    if ((frontSensor3ToWall >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && frontSensor3ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[1]) || 
-        (frontSensor1ToWall >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && frontSensor1ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[1])) {
-      break;
-     }
-
-    if (frontSensor1ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0] || 
-        frontSensor3ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0]) {
-      //reverse normally
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * -75, PIDOutputLeftME * -75);
-      delay(abs(error) * 100);  //100
-      md.setBrakes(350, 350);
-    }
-    else if(frontSensor1ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1] || 
-        frontSensor3ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1]) {  
-      //move forward
-      //moveForward(100,0.9);
-      // Serial.println("Moving forwards");
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 75, PIDOutputLeftME * 75);
-      delay(abs(error) * 100);    //100
-      md.setBrakes(350, 350);
-    }
-  }
-  calibrateFrontAngle();
-}
- 
-
-void calibrateFrontAngle()
-{
-  int counter = 0;
-  frontSensor1ToWall = 0;
-  frontSensor3ToWall = 0;
-  calibrationAngleError = 0;
-  double angleDist = 0;
-  while(counter < 15){
-      
-    frontSensor1ToWall = SRSensorFront1.distance();
-    frontSensor3ToWall = SRSensorFront3.distance();
-    calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
-    counter++;
-    if(abs(calibrationAngleError) <= calibrationFrontAngleThreshold){
-      break;
-    }
-    //cannot calibrate because the robot is too far away
-    while(frontSensor1ToWall > MIN_DISTANCE_CALIBRATE && frontSensor3ToWall > MIN_DISTANCE_CALIBRATE){
-      angleDist = frontSensor1ToWall < frontSensor3ToWall ? (frontSensor1ToWall - MIN_DISTANCE_CALIBRATE) : (frontSensor3ToWall - MIN_DISTANCE_CALIBRATE);
-      md.setSpeeds(75, -75);
-      delay(abs(angleDist) * 50);
-      md.setBrakes(400,400);
-      frontSensor1ToWall = SRSensorFront1.distance();
-      frontSensor3ToWall = SRSensorFront3.distance();
-    }
-    restartPID();
-    calibrateFrontSensorsAngle(calibrationAngleError);
-  }
-    //force a reverse because the robot is too near
-    if(frontSensor1ToWall < MIN_DISTANCE_CALIBRATE && frontSensor3ToWall < MIN_DISTANCE_CALIBRATE) {
-      md.setSpeeds(-75, 75);
-      delay(abs(calibrationAngleError) * 50);
-      md.setBrakes(400, 400);
-    }
-    md.setBrakes(400,400);
-    delay(1);
-}
-
-void calibrateFrontSensorsAngle(float error)
-{
-  delayMicroseconds(1000);
-  if (error > calibrationFrontAngleThreshold) {
-    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-    md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
-    delay(abs(error * 50));
-    md.setBrakes(400, 400);
-  } else if (error < -calibrationFrontAngleThreshold) {
-    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-    md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
-    delay(abs(error * 50));
-    md.setBrakes(400, 400);
-  }
-}
-
-void calibrateLeftAngle()
-{
-  leftSensor1ToWall = 0;
-  leftSensor2ToWall = 0;
-  calibrationAngleError = 0;
-  leftSensor1ToWall = SRSensorLeft1.distance();
-  leftSensor2ToWall = SRSensorLeft2.distance();
-  
-  calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
-  if(leftSensor1ToWall <= 12 && leftSensor2ToWall <= 12){
-    if(calibrationAngleError >= calibrationLeftAngleThreshold){
-      while(calibrationAngleError >= calibrationLeftAngleThreshold)
-        calibrateTurnRight(0.05);
-        delayMicroseconds(calibrationDelay);
-        leftSensor1ToWall = SRSensorLeft1.distance();
-        leftSensor2ToWall = SRSensorLeft2.distance();
-        calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
-      }
-    }
-    else if(calibrationAngleError <= -calibrationLeftAngleThreshold){
-      while(calibrationAngleError <= -calibrationLeftAngleThreshold){
-        calibrateTurnLeft(0.05);
-        delayMicroseconds(calibrationDelay);
-        leftSensor1ToWall = SRSensorLeft1.distance();
-        leftSensor2ToWall = SRSensorLeft2.distance();
-        calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
-    }
-  }
-}
-
-// Maybe should change the name into calibrateLeftDistance().
-void calibrateLeftDistance()
-{
-  leftSensor1ToWall = 0;
-  leftSensor2ToWall = 0;
-  leftSensor1ToWall = SRSensorLeft1.distance();
-  leftSensor2ToWall = SRSensorLeft2.distance();
-  float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
-  if(leftSensor1ToWall > MIN_DISTANCE_CALIBRATE ||  leftSensor2ToWall > MIN_DISTANCE_CALIBRATE){
-    return;
-  }
-
-//abort if within margin of error
-  if (diff < 0.9 && ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]))) {
-    return;
-    }
-  if (diff >=0.9 || (leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0]) || (leftSensor1ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1] && leftSensor2ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1])) 
-  {
-    turnLeftOneGrid();
-    calibrateFrontDistance(1.5);
-    delayMicroseconds(calibrationDelay);
-    calibrateFrontAngle();
-    delayMicroseconds(calibrationDelay); 
-    turnRightOneGrid();
-  }
-}
-
-// ==================== Debug (To Remove) ====================
-
-void debugSensorDistance()
-{
-  debugOutput = "d";
-  debugOutput = debugOutput + srSensorFront1Distance + " | " + srSensorFront2Distance + " | " + srSensorFront3Distance + " | " + srSensorLeft1Distance + " | " + srSensorLeft2Distance + " | " + lrSensorRight1Distance;
-  Serial.println(debugOutput);
-}
-
-void debugPID()
-{
-  debugOutput = "d";
-  debugOutput = debugOutput + "Left PID = " + PIDOutputLeftME + " | Right PID = " + PIDOutputRightME;
-  Serial.println(debugOutput);
-}
-
-void debugDelay()
-{
-  debugOutput = "d";
-  debugOutput = debugOutput + "moveForwardDelay = " + moveForwardDelay + " | turnDelay = " + turnDelay + " | explorationDelay = " + explorationDelay + " | calibrationDelay = " + calibrationDelay;
-  Serial.println(debugOutput);
-}
+*/
