@@ -3,6 +3,30 @@
 #include "PinChangeInt.h"
 #include <RunningMedian.h>
 
+// Tuning parameters for week 9
+// PID
+float kpLeftME = 2.72;
+float kiLeftME = 0.2;
+float kdLeftME = 0.1;
+float kpRightME = 3.20; // Original = 3.12
+float kiRightME = 0.2;
+float kdRightME = 0.1;
+// Robot Movement
+unsigned int oneGridDistance = 10100; // Original = 10800
+unsigned int turnGridDistance = 14285;
+// auto-cali parameters
+float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
+float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
+float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 6.75};
+float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4}; 
+// delay
+int moveForwardDelay = 4450; // Original = 4450
+int turnDelay = 4700;  // Original = 4700
+int explorationDelay = 125; // Original = 125, try 2.5
+int calibrationDelay = 4230; // Not used
+
+
+
 // Parameters Definition
 #define motorEncoderRight1 3
 #define motorEncoderLeft1 11
@@ -14,7 +38,6 @@
 #define lrSensorRight1 A5     // PS6
 #define SRSensor_Model 1080
 #define LRSensor_Model 20150
-
 // Initialisation
 DualVNH5019MotorShield md;
 // Old
@@ -43,12 +66,7 @@ float RPMRight = 0;
 float RPMLeft = 0;
 int counterRight = 0;
 int counterLeft = 0;
-float kpLeftME = 2.72;
-float kiLeftME = 0.2;
-float kdLeftME = 0.1;
-float kpRightME = 3.20; // Original = 3.12
-float kiRightME = 0.2;
-float kdRightME = 0.1;
+
 float k1LeftME = 0;
 float k2LeftME = 0;
 float k3LeftME = 0;
@@ -66,9 +84,6 @@ float previousPIDOutputLeftME = 0;
 float PIDOutputRightME = 0;
 float previousPIDOutputRightME = 0;
 int setpoint = 80;
-// Robot Movement
-unsigned int oneGridDistance = 10100; // Original = 10800
-unsigned int turnGridDistance = 14285;
 unsigned int distanceToMove = 0;
 unsigned int totalDistance = 0;
 // Sensors
@@ -106,13 +121,6 @@ float leftSensor1ToWall = 0;
 float leftSensor2ToWall = 0;
 
 
-// auto-cali parameters
-float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
-float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
-float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 6.75};
-float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4};  
-
-
 // Others
 String sRead = "";
 String cc = "";
@@ -123,10 +131,6 @@ RunningMedian analogReadings = RunningMedian(sensorSampleSize);
 RunningMedian analogReadings2 = RunningMedian(sensorSampleSize);
 RunningMedian analogReadings3 = RunningMedian(sensorSampleSize);
 String debugOutput = "";
-int moveForwardDelay = 4450; // Original = 4450
-int turnDelay = 4700;  // Original = 4700
-int explorationDelay = 125; // Original = 125
-int calibrationDelay = 4230; // Original = 4230
 
 void setup()
 {
