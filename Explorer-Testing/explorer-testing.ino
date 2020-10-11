@@ -81,12 +81,12 @@ RunningMedian srSensorFront3DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorLeft1DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorLeft2DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian lrSensorRight1DistanceRM = RunningMedian(sensorSampleSize);
-float SRFRONT_1_RANGE[3] = {12.81, 27.1, 33.11};
-float SRFRONT_2_RANGE[3] = {12.5, 23.2, 34};
-float SRFRONT_3_RANGE[3] = {12.8, 23.7, 37}; // original 13.04
-float SRLEFT_1_RANGE[3] = {9, 19, 29};
-float SRLEFT_2_RANGE[3] = {9, 19, 28};
-float LRRIGHT_1_RANGE[3] = {9.5, 21, 30};
+float SRFRONT_1_RANGE[3] = {12.42, 27.45, 40.95};
+float SRFRONT_2_RANGE[3] = {12.21, 24.02, 35.54};
+float SRFRONT_3_RANGE[3] = {12.45, 23.70, 37.32};
+float SRLEFT_1_RANGE[3] = {9.33, 18.80, 27.32};
+float SRLEFT_2_RANGE[3] = {9.31, 17.94, 25.25};
+float LRRIGHT_1_RANGE[3] = {10.11, 20.55, 29.54};
 float srSensorFront1Distance = 0;
 float srSensorFront2Distance = 0;
 float srSensorFront3Distance = 0;
@@ -104,16 +104,14 @@ float frontSensor1ToWall = 0;
 float frontSensor3ToWall = 0;
 float leftSensor1ToWall = 0;
 float leftSensor2ToWall = 0;
-float calibrationAngleError = 0;
+
+
+// auto-cali parameters
 float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
-float ANGLE_CALIBRATION_THRESHOLD = 0.10;  // error within this value not trigger calibration
+float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
 float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 6.75};
 float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4};  
-float RIGHT_TO_WALL_DISTANCE_THRESHOLD[2] = {4.5, 6.75}; 
-float calibrationLeftAngleThreshold = 1;
-float calibrationFrontAngleThreshold = 1;
-float calibrationDistanceThreshold = 6;
-float calibrationDistanceLimit = 10;
+
 
 // Others
 String sRead = "";
@@ -160,11 +158,11 @@ void exploration()
       cc = sRead.substring(0,2);
       sRead = sRead.substring(2);
        if(cc == "11"){
-        calibrationDistanceThreshold = sRead.toFloat();
+        MIN_DISTANCE_CALIBRATE = sRead.toFloat();
       } else if(cc == "12"){
-        calibrationLeftAngleThreshold = sRead.toFloat();
+        ANGLE_CALIBRATION_THRESHOLD = sRead.toFloat();
       } else if(cc == "13"){
-        calibrationFrontAngleThreshold = sRead.toFloat();
+        FRONT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
       } else if(cc == "14"){
         kpLeftME = sRead.toFloat();
       } else if(cc == "15"){
@@ -189,8 +187,6 @@ void exploration()
         explorationDelay = sRead.toInt();
       }else if(cc == "25"){
         calibrationDelay = sRead.toInt();
-      }else if(cc == "26"){
-        calibrationDistanceLimit = sRead.toFloat();
       }
       else if (cc == "UU") {
         goStraightNGrids(1);
@@ -544,18 +540,19 @@ void calibrateFrontDistance(float offset)
       md.setBrakes(400, 400);
     }
   }
+  // cali angle after cali distance
   calibrateFrontAngle();
 }
 
  void calibrateFrontSensorsAngle(float error)
 {
   delayMicroseconds(1000);
-  if (error > calibrationFrontAngleThreshold) {
+  if (error > ANGLE_CALIBRATION_THRESHOLD) {
     PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
     md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
     delay(abs(error * 50));
     md.setBrakes(400, 400);
-  } else if (error < -calibrationFrontAngleThreshold) {
+  } else if (error < -ANGLE_CALIBRATION_THRESHOLD) {
     PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
     md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
     delay(abs(error * 50));
@@ -568,14 +565,14 @@ void calibrateFrontAngle()
   int counter = 0;
   frontSensor1ToWall = 0;
   frontSensor3ToWall = 0;
-  calibrationAngleError = 0;
+  float calibrationAngleError = 0;
   double angleDist = 0;
   while(counter < 15){
     frontSensor1ToWall = SRSensorFront1.distance();
     frontSensor3ToWall = SRSensorFront3.distance();
     calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
     counter++;
-    if(abs(calibrationAngleError) <= calibrationFrontAngleThreshold){
+    if(abs(calibrationAngleError) <= ANGLE_CALIBRATION_THRESHOLD){
       break;
     }
     calibrateFrontSensorsAngle(calibrationAngleError);
@@ -639,12 +636,12 @@ void debugDelay()
  * void calibrateFrontSensorsAngle(float error)
 {
   delayMicroseconds(1000);
-  if (error > calibrationFrontAngleThreshold) {
+  if (error > ANGLE_CALIBRATION_THRESHOLD) {
     PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
     md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
     delay(abs(error * 50));
     md.setBrakes(400, 400);
-  } else if (error < -calibrationFrontAngleThreshold) {
+  } else if (error < -ANGLE_CALIBRATION_THRESHOLD) {
     PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
     md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
     delay(abs(error * 50));
@@ -685,13 +682,13 @@ void calibrateLeftAngle()
 void calibrateFrontSensors(float error)
 {
   delayMicroseconds(1000);
-  if (error > calibrationFrontAngleThreshold) {
+  if (error > ANGLE_CALIBRATION_THRESHOLD) {
     restartPID();
     PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
      md.setSpeeds(-PIDOutputRightME * 75, PIDOutputLeftME * 75);
 //    md.setSpeeds(-75, 75);
     delay(abs(error * 50));
-  } else if (error < -calibrationFrontAngleThreshold) {
+  } else if (error < -ANGLE_CALIBRATION_THRESHOLD) {
     restartPID();
     PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
     md.setSpeeds(PIDOutputRightME * 75, -PIDOutputLeftME * 75);
