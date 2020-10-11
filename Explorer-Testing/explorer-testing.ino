@@ -120,11 +120,7 @@ float frontSensor3ToWall = 0;
 float leftSensor1ToWall = 0;
 float leftSensor2ToWall = 0;
 float calibrationAngleError = 0;
-float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
-float ANGLE_CALIBRATION_THRESHOLD = 0.50;  // error within this value not trigger calibration
-float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 6.5};
-float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4};  
-float RIGHT_TO_WALL_DISTANCE_THRESHOLD[2] = {4.5, 6.75}; 
+
 
 // Others
 String sRead = "";
