@@ -19,7 +19,6 @@ float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger c
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
 float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 6.75};
 float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4}; 
-float RIGHT_TO_WALL_DISTANCE_THRESHOLD[2] = {4.5, 6.75}; 
 // delay
 int moveForwardDelay = 4450; // Original = 4450
 int turnDelay = 4700;  // Original = 4700
