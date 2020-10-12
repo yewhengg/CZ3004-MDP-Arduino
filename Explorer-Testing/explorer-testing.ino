@@ -17,8 +17,8 @@
 // Tuning parameters for week 9
 // PID
 // tune the two params
-float kpRightME = 2.80; 
-float kiRightME = 0.225;
+float kpRightME = 2.70; 
+float kiRightME = 0.180;
 //-----
 float kpLeftME = 2.70; 
 float kiLeftME = 0.25;
@@ -26,9 +26,10 @@ float kdLeftME = 0.1;
 float kdRightME = 0.1;
 
 // Robot Movement
-unsigned int oneGridDistance = 3995; // Original = 10800
+unsigned int oneGridDistance = 3595; // Original = 10800
 unsigned int turnGridDistance = 14500;
-unsigned int turnSpeed = 250;
+unsigned int moveSpeed = 250;
+unsigned int moveSpeed = 250;
 // auto-cali parameters
 float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
@@ -40,9 +41,8 @@ int moveForwardDelay = 15; // Original = 4450
 int turnDelay = 5;  // Original = 4700
 int explorationDelay = 125; // Original = 125, try 2.5
 int calibrationDelay = 10; // Not used
-// COUNTER
-int COUNT = 3;  //counter the num of forward movement
-int COUNT_MOVE = 5;
+// COUNTER 
+int COUNT_MOVE = 5;  //counter the num of forward movement
 //sensor Range
 float SRFRONT_1_RANGE[3] = {13.02, 26.40, 40.95};
 float SRFRONT_2_RANGE[3] = {12.47, 22.70, 35.54};
@@ -215,10 +215,12 @@ void exploration()
         SRFRONT_2_RANGE[0] = sRead.toFloat();
       }else if(cc == "33"){
         SRFRONT_2_RANGE[1] = sRead.toFloat();
-      }else if(cc == "30"){
+      }else if(cc == "34"){
         SRFRONT_3_RANGE[0] = sRead.toFloat();
-      }else if(cc == "31"){
-        SRFRONT_3_RANGE[1] = sRead.toFloat();
+      }else if(cc == "35"){
+        SRFRONT_3_RANGE[1] = sRead.toInt();
+      }else if(cc == "35"){
+        COUNT_MOVE = sRead.toFloat();
       }
       else if (cc == "UU") {
         goStraightNGrids(1);
@@ -387,6 +389,7 @@ void goStraightNGrids(int n)
 void moveForward()
 {
   PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+  // 150 change to moveSpeed later !!!
   md.setSpeeds(PIDOutputRightME * 150, PIDOutputLeftME * 150);
   // delayMicroseconds(moveForwardDelay);
   delay(moveForwardDelay);
@@ -400,7 +403,7 @@ void turnLeftOneGrid()
       md.setBrakes(400, 400);
       break;
     } else {
-      md.setSpeeds(turnSpeed,-turnSpeed);
+      md.setSpeeds(moveSpeed,-moveSpeed);
 //      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
 //      md.setSpeeds(PIDOutputRightME * 150, -PIDOutputLeftME * 150);
       delay(turnDelay);
@@ -417,7 +420,7 @@ void turnRightOneGrid()
       md.setBrakes(400, 400);
       break;
     } else {
-      md.setSpeeds(-turnSpeed,turnSpeed);
+      md.setSpeeds(-moveSpeed,moveSpeed);
 //      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
 //      md.setSpeeds(-PIDOutputRightME * 150, PIDOutputLeftME * 150);
       delay(turnDelay);
