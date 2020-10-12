@@ -12,7 +12,7 @@ class SharpIR {
 		static const int LRVMin = 160;
 		static const int sampleSize = 50;
   	int getRaw() const;
-	  int distance() const;
+	  double distance() const;
 		void sort(int a[], int size) const;
  private:
   int _irPin;

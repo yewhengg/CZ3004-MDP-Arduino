@@ -1,18 +1,6 @@
-// Motor Library
-// https://github.com/pololu/dual-vnh5019-motor-shield
 #include "DualVNH5019MotorShield.h"
-// M1 = Right Motor, M2 = Left Motor
-
-// Sensor Library
-// https://github.com/guillaume-rico/SharpIR
 #include "SharpIR.h"
-
-// Pin Interrupt Library
-// https://github.com/NicoHood/PinChangeInterrupt
 #include "PinChangeInt.h"
-
-// Running Median Library
-// https://github.com/RobTillaart/Arduino/tree/master/libraries/RunningMedian
 #include <RunningMedian.h>
 
 // Parameters Definition
@@ -26,6 +14,35 @@
 #define lrSensorRight1 A5     // PS6
 #define SRSensor_Model 1080
 #define LRSensor_Model 20150
+// Tuning parameters for week 9
+// PID
+// tune the two params
+float kpRightME = 2.80; 
+float kiRightME = 0.225;
+//-----
+float kpLeftME = 2.70; 
+float kiLeftME = 0.25;
+float kdLeftME = 0.1;
+float kdRightME = 0.1;
+
+// Robot Movement
+unsigned int oneGridDistance = 3500; // Original = 10800
+unsigned int turnGridDistance = 14500;
+unsigned int turnSpeed = 250;
+// auto-cali parameters
+float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
+float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
+float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.5;  // error within this value not trigger calibration
+float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 6.75};
+float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4}; 
+// delay
+int moveForwardDelay = 15; // Original = 4450
+int turnDelay = 5;  // Original = 4700
+int explorationDelay = 125; // Original = 125, try 2.5
+int calibrationDelay = 10; // Not used
+// COUNTER
+int COUNT = 3;  //counter the num of forward movement
+
 
 // Initialisation
 DualVNH5019MotorShield md;
@@ -55,12 +72,7 @@ float RPMRight = 0;
 float RPMLeft = 0;
 int counterRight = 0;
 int counterLeft = 0;
-float kpLeftME = 2.72;
-float kiLeftME = 0.2;
-float kdLeftME = 0.1;
-float kpRightME = 3.20; // Original = 3.12
-float kiRightME = 0.2;
-float kdRightME = 0.1;
+
 float k1LeftME = 0;
 float k2LeftME = 0;
 float k3LeftME = 0;
@@ -78,9 +90,6 @@ float previousPIDOutputLeftME = 0;
 float PIDOutputRightME = 0;
 float previousPIDOutputRightME = 0;
 int setpoint = 80;
-// Robot Movement
-unsigned int oneGridDistance = 10100; // Original = 10800
-unsigned int turnGridDistance = 14285;
 unsigned int distanceToMove = 0;
 unsigned int totalDistance = 0;
 // Sensors
@@ -93,13 +102,12 @@ RunningMedian srSensorFront3DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorLeft1DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorLeft2DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian lrSensorRight1DistanceRM = RunningMedian(sensorSampleSize);
-//update from testing on 10, Oct
-float SRFRONT_1_RANGE[3] = {12.42, 27.45, 40.95};
-float SRFRONT_2_RANGE[3] = {12.21, 24.02, 35.54};
-float SRFRONT_3_RANGE[3] = {12.45, 23.70, 37.32};
+float SRFRONT_1_RANGE[3] = {12.35, 26.40, 40.95};
+float SRFRONT_2_RANGE[3] = {11.07, 22.70, 35.54};
+float SRFRONT_3_RANGE[3] = {11.55, 23.20, 37.32};
 float SRLEFT_1_RANGE[3] = {9.33, 18.80, 27.32};
 float SRLEFT_2_RANGE[3] = {9.31, 17.94, 25.25};
-float LRRIGHT_1_RANGE[3] = {10.11, 20.55, 29.54};
+float LRRIGHT_1_RANGE[3] = {9.51, 20.55, 29.54}; //[0]=10.11
 float srSensorFront1Distance = 0;
 float srSensorFront2Distance = 0;
 float srSensorFront3Distance = 0;
@@ -115,10 +123,13 @@ int lrSensorRight1DistanceOutput = 0;
 // Calibrations
 float frontSensor1ToWall = 0;
 float frontSensor3ToWall = 0;
+float leftSensor1ToWall = 0;
+float leftSensor2ToWall = 0;
 float calibrationAngleError = 0;
-float calibrationAngleThreshold = 1;
-float calibrationDistanceThreshold = 3.5;
+
+
 // Others
+String sRead = "";
 String cc = "";
 boolean explorationFlag = false;
 boolean fastestPathFlag = false;
@@ -127,10 +138,6 @@ RunningMedian analogReadings = RunningMedian(sensorSampleSize);
 RunningMedian analogReadings2 = RunningMedian(sensorSampleSize);
 RunningMedian analogReadings3 = RunningMedian(sensorSampleSize);
 String debugOutput = "";
-int moveForwardDelay = 4450; // Original = 4450
-int turnDelay = 4700;  // Original = 4700
-int explorationDelay = 125; // Original = 125
-int calibrationDelay = 4230; // Original = 4230
 
 void setup()
 {
@@ -145,14 +152,8 @@ void setup()
 void loop()
 {
   if (Serial.available() > 0) {
-    cc = char(Serial.read());
-    if (cc == "E") {
       explorationFlag = true;
       exploration();
-    } else if (cc == "F") {
-      fastestPathFlag = true;
-      //fastestPath();
-    }
   }
 }
 
@@ -225,13 +226,11 @@ void exploration()
         delay(explorationDelay);
         debugDelay();
       } else if (cc == "C") {    // Debug calibrationDelay
-        int debugValue = Serial.read();
-        calibrationDelay = debugValue;
-        delay(explorationDelay);
-        debugDelay();
-      } else if (cc == "G") {
-        calibrateFrontAngle();
-        // calibrateLeftWall();
+        // TRIGGERED BY ALGO
+        calibrate();
+        getSensorsDistanceRM(sensorSampleSize);
+        debugSensorDistance();
+        restartPID();
       }
     }
   }
@@ -338,7 +337,8 @@ void moveForward()
 {
   PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
   md.setSpeeds(PIDOutputRightME * 150, PIDOutputLeftME * 150);
-  delayMicroseconds(moveForwardDelay);
+  // delayMicroseconds(moveForwardDelay);
+  delay(moveForwardDelay);
 }
 
 void turnLeftOneGrid()
@@ -349,9 +349,10 @@ void turnLeftOneGrid()
       md.setBrakes(400, 400);
       break;
     } else {
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 150, -PIDOutputLeftME * 150);
-      delayMicroseconds(turnDelay);
+      md.setSpeeds(turnSpeed,-turnSpeed);
+//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+//      md.setSpeeds(PIDOutputRightME * 150, -PIDOutputLeftME * 150);
+      delay(turnDelay);
       totalDistance = totalDistance + RPMLeft + RPMRight; 
     }
   }
@@ -365,9 +366,10 @@ void turnRightOneGrid()
       md.setBrakes(400, 400);
       break;
     } else {
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(-PIDOutputRightME * 150, PIDOutputLeftME * 150);
-      delayMicroseconds(turnDelay);
+      md.setSpeeds(-turnSpeed,turnSpeed);
+//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+//      md.setSpeeds(-PIDOutputRightME * 150, PIDOutputLeftME * 150);
+      delay(turnDelay);
       totalDistance = totalDistance + RPMLeft + RPMRight; 
     }
   }
@@ -393,8 +395,8 @@ void getSensorsVoltageRM(int n)
 //  Serial.println(analogReadings.getMedian());
 //  Serial.println(analogReadings2.getMedian());
 //  Serial.println(analogReadings3.getMedian());
-  Serial.println("===== Average =====");
-  Serial.println(analogReadings.getAverage(5));
+//  Serial.println("===== Average =====");
+//  Serial.println(analogReadings.getAverage(5));
 //  Serial.println(analogReadings2.getAverage(5));
 //  Serial.println(analogReadings3.getAverage(5));
 }
@@ -487,119 +489,160 @@ void getSensorsDistanceRM(int n)
   Serial.println(sensorOutput);
 }
 
+
 // ==================== Calibration ====================
 
-void calibrateFrontSensors(float error)
-{
-  delayMicroseconds(1000);
-  if (error > calibrationAngleThreshold) {
-    restartPID();
-    //PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-    // md.setSpeeds(-PIDOutputRightME * 75, PIDOutputLeftME * 75);
-    md.setSpeeds(-250, 250);
-    delay(abs(error * 50));
-  } else if (error < -calibrationAngleThreshold) {
-    restartPID();
-//    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-//    md.setSpeeds(PIDOutputRightME * 75, -PIDOutputLeftME * 75);
-    md.setSpeeds(250, -250);
-    delay(abs(error * 50));
-  }
+
+void calibrate() {
+  float frontSensor3ToWall = SRSensorFront3.distance();  //getDistance(1);
+  float frontSensor1ToWall = SRSensorFront1.distance(); //getDistance(3);
+  if(frontSensor3ToWall > MIN_DISTANCE_CALIBRATE + 10 || frontSensor1ToWall > MIN_DISTANCE_CALIBRATE + 10) return;
+  delay(calibrationDelay);
+  calibrateFrontAngle();
+  delay(calibrationDelay);
+  calibrateFrontDistance(0);
+  delay(calibrationDelay);
+  calibrateFrontAngle();
 }
 
-void calibrateTurnLeft(double n)
-{
-  distanceToMove = turnGridDistance * n;
-  totalDistance = 0;
-  restartPID();
-  while (1) {
-    if (totalDistance >= distanceToMove) {
-      md.setBrakes(400, 400);
-      break;
-    } else {
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 60, -PIDOutputLeftME * 60);
-      delayMicroseconds(4230);
-      totalDistance = totalDistance + RPMLeft + RPMRight;
-    }
-  }
-}
 
-void calibrateTurnRight(double n)
-{
-  distanceToMove = turnGridDistance * n;
-  totalDistance = 0;
-  restartPID();
-  while (1) {
-    if (totalDistance >= distanceToMove) {
-      md.setBrakes(400, 400);
-      break;
-    } else {
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(-PIDOutputRightME * 60, PIDOutputLeftME * 60);
-      delayMicroseconds(4230);
-      totalDistance = totalDistance + RPMLeft + RPMRight;
-    }
-  }
-}
-
-void calibrateFrontDistance()
+void calibrateFrontDistance(float offset)
 {
   frontSensor1ToWall = 0;
   frontSensor3ToWall = 0;
-  while (1) {
-    frontSensor1ToWall = SRSensorFront1.distance();
-    frontSensor3ToWall = SRSensorFront3.distance();
-    while (frontSensor1ToWall > calibrationDistanceThreshold && frontSensor3ToWall > calibrationDistanceThreshold) {
-      restartPID();
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(PIDOutputRightME * 60, PIDOutputLeftME * 60);
-      delayMicroseconds(10000);
-      md.setBrakes(400, 400);
-      frontSensor1ToWall = SRSensorFront1.distance();
-      frontSensor3ToWall = SRSensorFront3.distance();
-    }
-    if (frontSensor1ToWall < calibrationDistanceThreshold && frontSensor3ToWall < calibrationDistanceThreshold) {
-      restartPID();
-      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-      md.setSpeeds(-PIDOutputRightME * 60, -PIDOutputLeftME * 60);
-      delayMicroseconds(10000);
-      md.setBrakes(400, 400);
-    } else {
+  float error;
+  while(1) {
+    //Original
+    frontSensor1ToWall = SRSensorFront1.distance() - offset;
+    frontSensor3ToWall = SRSensorFront3.distance() - offset;
+    // 5cm is the target of the distance between obstacle/wall and robot.
+    error = 5.0 - ((frontSensor1ToWall + frontSensor3ToWall) / 2);
+
+    if(frontSensor1ToWall > MIN_DISTANCE_CALIBRATE || 
+       frontSensor3ToWall > MIN_DISTANCE_CALIBRATE) {
       break;
+     }
+
+    //abort if within margin of error
+    if ((frontSensor3ToWall >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && frontSensor3ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[1]) || 
+        (frontSensor1ToWall >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && frontSensor1ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[1])) {
+      break;
+     }
+
+    if (frontSensor1ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0] || 
+        frontSensor3ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0]) {
+      //reverse normally
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 30);
+      md.setSpeeds(PIDOutputRightME * -100, PIDOutputLeftME * -100);
+      delay(abs(error) * 75);  //100
+      md.setBrakes(400, 400);
     }
+    else if(frontSensor1ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1] || 
+        frontSensor3ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1]) {  
+      //move forward
+      //moveForward(100,0.9);
+      // Serial.println("Moving forwards");
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 30);
+      md.setSpeeds(PIDOutputRightME * 100, PIDOutputLeftME * 100);
+      delay(abs(error) * 75);    //100
+      md.setBrakes(400, 400);
+    }
+  }
+}
+
+ void calibrateFrontSensorsAngle(float error)
+{
+  if (error > ANGLE_CALIBRATION_THRESHOLD) {
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+    md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
+    delay(abs(error * 50));
+    md.setBrakes(400, 400);
+  } else if (error < -ANGLE_CALIBRATION_THRESHOLD) {
+    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+    md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
+    delay(abs(error * 50));
+    md.setBrakes(400, 400);
   }
 }
 
 void calibrateFrontAngle()
 {
+  int counter = 0;
   frontSensor1ToWall = 0;
   frontSensor3ToWall = 0;
-  calibrationAngleError = 0;
-  while (1) {
+  float calibrationAngleError = 0;
+  double angleDist = 0;
+  while(counter < 15){
     frontSensor1ToWall = SRSensorFront1.distance();
     frontSensor3ToWall = SRSensorFront3.distance();
     calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
-    if (abs(calibrationAngleError) <= calibrationAngleThreshold) {
+    counter++;
+    if(abs(calibrationAngleError) <= ANGLE_CALIBRATION_THRESHOLD){
       break;
     }
-    // calibrateFrontDistance();
-    calibrateFrontSensors(calibrationAngleError);
+    calibrateFrontSensorsAngle(calibrationAngleError);
+    md.setBrakes(400,400);
   }
 }
 
-void calibrateLeftWall()
+
+void calibrateLeftDistance()
 {
-  float leftSensor1ToWall = 0;
-  float leftSensor2ToWall = 0;
-  while (1) {
-    leftSensor1ToWall = SRSensorLeft1.distance();
-    leftSensor2ToWall = SRSensorLeft2.distance();
-    while (leftSensor1ToWall < 0 && leftSensor2ToWall < 0) {
-      calibrateFrontAngle();
+  // Function that implement the logic when to turn left 90degree, and then call calibrateFrontDistance. 
+  leftSensor1ToWall = 0;
+  leftSensor2ToWall = 0;
+  leftSensor1ToWall = SRSensorLeft1.distance();
+  leftSensor2ToWall = SRSensorLeft2.distance();
+  float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
+  if(leftSensor1ToWall > MIN_DISTANCE_CALIBRATE ||  leftSensor2ToWall > MIN_DISTANCE_CALIBRATE){
+    return;
+  }
+
+//abort if within margin of error
+  if (diff < LEFT_ANGLE_CALIBRATION_THRESHOLD && ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]))) {
+    return;
     }
-    if (abs(leftSensor1ToWall - leftSensor2ToWall) < calibrationDistanceThreshold) {
+  if (diff >= LEFT_ANGLE_CALIBRATION_THRESHOLD || (leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0]) || (leftSensor1ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1] && leftSensor2ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1])) 
+  {
+    calibrateTurnLeftOneGrid();
+    calibrateFrontDistance(1.5);
+    delay(calibrationDelay);
+    calibrateFrontAngle();
+    delay(calibrationDelay); 
+    calibrateTurnRightOneGrid();
+  }
+}
+
+void calibrateTurnLeftOneGrid()
+{
+  totalDistance = 0;
+  while (1) {
+    if (totalDistance >= turnGridDistance + 800) {
+      md.setBrakes(400, 400);
       break;
+    } else {
+//      md.setSpeeds(80, -80);
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 50);
+      md.setSpeeds(PIDOutputRightME * 100, -PIDOutputLeftME * 100);
+      delay(turnDelay);
+      totalDistance = totalDistance + RPMLeft + RPMRight; 
+    }
+  }
+}
+
+void calibrateTurnRightOneGrid()
+{
+  totalDistance = 0;
+  while (1) {
+    if (totalDistance > turnGridDistance + 800) {
+      md.setBrakes(400, 400);
+      break;
+    } else {
+//      md.setSpeeds(-80, 80);
+      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 50);
+      md.setSpeeds(-PIDOutputRightME * 100, PIDOutputLeftME * 100);
+      delay(turnDelay);
+      totalDistance = totalDistance + RPMLeft + RPMRight; 
     }
   }
 }
@@ -610,19 +653,19 @@ void debugSensorDistance()
 {
   debugOutput = "d";
   debugOutput = debugOutput + srSensorFront1Distance + " | " + srSensorFront2Distance + " | " + srSensorFront3Distance + " | " + srSensorLeft1Distance + " | " + srSensorLeft2Distance + " | " + lrSensorRight1Distance;
-  Serial.println(debugOutput);
+//  Serial.println(debugOutput);
 }
 
 void debugPID()
 {
   debugOutput = "d";
   debugOutput = debugOutput + "Left PID = " + PIDOutputLeftME + " | Right PID = " + PIDOutputRightME;
-  Serial.println(debugOutput);
+//  Serial.println(debugOutput);
 }
 
 void debugDelay()
 {
   debugOutput = "d";
   debugOutput = debugOutput + "moveForwardDelay = " + moveForwardDelay + " | turnDelay = " + turnDelay + " | explorationDelay = " + explorationDelay + " | calibrationDelay = " + calibrationDelay;
-  Serial.println(debugOutput);
+//  Serial.println(debugOutput);
 }
