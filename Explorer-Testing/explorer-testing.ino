@@ -69,7 +69,7 @@ SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 5177.84, 11.0427, -21.9181)
 SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 7840.02, 14.9919, 43.0052);
 SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 302904, 169.317, 1249.89);
 // Parameters Declaration
-// PID Calculation
+//PID Calculation
 unsigned long startTimeRightME = 0;
 unsigned long endTimeRightME = 0;
 unsigned long timeTakenRightME = 0;
@@ -132,7 +132,8 @@ float calibrationAngleError = 0;
 
 // Others
 String sRead = "";
-String cc = "";
+String algo_c = "";
+String test_c = "";
 boolean explorationFlag = false;
 boolean fastestPathFlag = false;
 // Testing Parameters (To Remove)
@@ -167,70 +168,71 @@ void exploration()
   while (explorationFlag) {
     if (Serial.available() > 0) {
       sRead = Serial.readString();
-      cc = sRead.substring(0,2);
+      test_c = sRead.substring(0,2);
+      algo_c = sRead.substring(0,1);
       sRead = sRead.substring(2);
-       if(cc == "11"){
+      // Testing commands
+       if(test_c == "11"){
         MIN_DISTANCE_CALIBRATE = sRead.toFloat();
-      } else if(cc == "12"){
+      } else if(test_c == "12"){
         ANGLE_CALIBRATION_THRESHOLD = sRead.toFloat();
-      } else if(cc == "13"){
+      } else if(test_c == "13"){
         LEFT_ANGLE_CALIBRATION_THRESHOLD = sRead.toFloat();
-      } else if(cc == "14"){
+      } else if(test_c == "14"){
         kpLeftME = sRead.toFloat();
-      } else if(cc == "15"){
+      } else if(test_c == "15"){
         kiLeftME = sRead.toFloat();
-      } else if(cc == "16"){
+      } else if(test_c == "16"){
         kdLeftME = sRead.toFloat();
-      } else if(cc == "17"){
+      } else if(test_c == "17"){
         kpRightME = sRead.toFloat();
-      }else if(cc == "18"){
+      }else if(test_c == "18"){
         kiRightME = sRead.toFloat();
-      }else if(cc == "19"){
+      }else if(test_c == "19"){
         kdRightME = sRead.toFloat();
-      }else if(cc == "20"){
+      }else if(test_c == "20"){
         oneGridDistance = sRead.toInt();
-      }else if(cc == "21"){
+      }else if(test_c == "21"){
         turnGridDistance = sRead.toInt();
-      }else if(cc == "22"){
+      }else if(test_c == "22"){
         moveForwardDelay = sRead.toInt();
-      }else if(cc == "23"){
+      }else if(test_c == "23"){
         turnDelay = sRead.toInt();
-      }else if(cc == "24"){
+      }else if(test_c == "24"){
         explorationDelay = sRead.toInt();
-      }else if(cc == "25"){
+      }else if(test_c == "25"){
         calibrationDelay = sRead.toInt();
-      }else if(cc == "26"){
+      }else if(test_c == "26"){
         FRONT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
-      }else if(cc == "27"){
+      }else if(test_c == "27"){
         FRONT_SENSORS_DISTANCE_THRESHOLD[1] = sRead.toFloat();
-      }else if(cc == "28"){
+      }else if(test_c == "28"){
         LEFT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
-      }else if(cc == "29"){
+      }else if(test_c == "29"){
         LEFT_SENSORS_DISTANCE_THRESHOLD[1] = sRead.toFloat();
-      }else if(cc == "30"){
+      }else if(test_c == "30"){
         SRFRONT_1_RANGE[0] = sRead.toFloat();
-      }else if(cc == "31"){
+      }else if(test_c == "31"){
         SRFRONT_1_RANGE[1] = sRead.toFloat();
-      }else if(cc == "32"){
+      }else if(test_c == "32"){
         SRFRONT_2_RANGE[0] = sRead.toFloat();
-      }else if(cc == "33"){
+      }else if(test_c == "33"){
         SRFRONT_2_RANGE[1] = sRead.toFloat();
-      }else if(cc == "34"){
+      }else if(test_c == "34"){
         SRFRONT_3_RANGE[0] = sRead.toFloat();
-      }else if(cc == "35"){
+      }else if(test_c == "35"){
         SRFRONT_3_RANGE[1] = sRead.toInt();
-      }else if(cc == "35"){
+      }else if(test_c == "35"){
         COUNT_MOVE = sRead.toFloat();
-      }
-      else if (cc == "UU") {
-        goStraightNGrids(1);
-        getSensorsDistanceRM(sensorSampleSize);
-        delay(explorationDelay);
-        debugSensorDistance();
-        //debugPID();
-        //debugDelay();
-        restartPID();
-      }else if (cc == "NU") {
+      }else if (test_c == "DC") {
+        delay(10);
+        calibrateFrontDistance(0);
+        delay(10);
+      }else if (test_c == "AC") {
+        delay(10);
+        calibrateFrontAngle();
+        delay(10);
+      }else if (test_c == "NU") {
         for(int i =0; i<COUNT_MOVE; i++){
         goStraightNGrids(1);
         getSensorsDistanceRM(sensorSampleSize);
@@ -240,7 +242,17 @@ void exploration()
         //debugDelay();
         restartPID();
         }
-      }else if (cc == "LL") {
+      }
+      // Algo commands
+      else if (algo_c == "U") {
+        goStraightNGrids(1);
+        getSensorsDistanceRM(sensorSampleSize);
+        delay(explorationDelay);
+        debugSensorDistance();
+        //debugPID();
+        //debugDelay();
+        restartPID();
+      }else if (algo_c == "L") {
         turnLeftOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
@@ -250,7 +262,7 @@ void exploration()
         //print delay time
         //debugDelay();
         restartPID();
-      } else if (cc == "RR") {
+      } else if (algo_c == "R") {
         turnRightOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
@@ -258,7 +270,7 @@ void exploration()
        // debugPID();
         //debugDelay();
         restartPID();
-      } else if (cc == "DD") {
+      } else if (algo_c == "D") {
         turnRightOneGrid();
         delay(explorationDelay);
         restartPID();
@@ -266,25 +278,17 @@ void exploration()
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         restartPID();
-      } else if (cc == "ZZ") {
+      } else if (algo_c == "Z") {
         getSensorsVoltageRM(sensorSampleSize);
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         debugSensorDistance();
-      } else if (cc == "##") {
+      } else if (algo_c == "#") {
         explorationFlag = false;
         delay(explorationDelay);
         return;
-      } else if (cc == "CC") {
+      } else if (algo_c == "C") {
         calibrate();
-      }else if (cc == "DC") {
-        delay(10);
-        calibrateFrontDistance(0);
-        delay(10);
-      }else if (cc == "AC") {
-        delay(10);
-        calibrateFrontAngle();
-        delay(10);
       }
     }
   }
