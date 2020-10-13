@@ -15,21 +15,20 @@
 #define SRSensor_Model 1080
 #define LRSensor_Model 20150
 // Tuning parameters for week 9
+
 // PID
-// tune the two params
+float kpLeftME = 2.70; 
+float kiLeftME = 0.19;
+float kdLeftME = 0.1;
 float kpRightME = 2.70; 
 float kiRightME = 0.180;
-//-----
-float kpLeftME = 2.70; 
-float kiLeftME = 0.25;
-float kdLeftME = 0.1;
 float kdRightME = 0.1;
 
 // Robot Movement
-unsigned int oneGridDistance = 3595; // Original = 10800
+unsigned int oneGridDistance = 2900;
 unsigned int turnGridDistance = 14500;
-unsigned int moveSpeed = 250;
-unsigned int moveSpeed = 250;
+unsigned int moveSpeed = 300;
+unsigned int turnSpeed = 250;
 // auto-cali parameters
 float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
@@ -155,8 +154,14 @@ void setup()
 void loop()
 {
   if (Serial.available() > 0) {
+    char cc = char(Serial.read());
+    if (cc == 'E') {
       explorationFlag = true;
       exploration();
+    } else if (cc == 'F') {
+      fastestPathFlag = true;
+      //fastestPath();
+    }
   }
 }
 
@@ -171,6 +176,8 @@ void exploration()
       test_c = sRead.substring(0,2);
       algo_c = sRead.substring(0,1);
       sRead = sRead.substring(2);
+      // delay 
+      delay(explorationDelay);
       // Testing commands
        if(test_c == "11"){
         MIN_DISTANCE_CALIBRATE = sRead.toFloat();
@@ -222,9 +229,14 @@ void exploration()
         SRFRONT_3_RANGE[0] = sRead.toFloat();
       }else if(test_c == "35"){
         SRFRONT_3_RANGE[1] = sRead.toInt();
-      }else if(test_c == "35"){
+      }else if(test_c == "36"){
         COUNT_MOVE = sRead.toFloat();
-      }else if (test_c == "DC") {
+      }else if(test_c == "37"){
+        moveSpeed = sRead.toInt();
+      }else if(test_c == "38"){
+        turnSpeed = sRead.toInt();
+      }
+      else if (test_c == "DC") {
         delay(10);
         calibrateFrontDistance(0);
         delay(10);
@@ -247,28 +259,51 @@ void exploration()
       else if (algo_c == "U") {
         goStraightNGrids(1);
         getSensorsDistanceRM(sensorSampleSize);
+        debugSensorDistance();
         delay(explorationDelay);
+        //debugPID();
+        //debugDelay();
+        restartPID();
+      }else if (algo_c == "2") {
+        goStraightNGrids(2);
+        getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
         //debugPID();
         //debugDelay();
         restartPID();
-      }else if (algo_c == "L") {
+      }else if (algo_c == "3") {
+        goStraightNGrids(3);
+        getSensorsDistanceRM(sensorSampleSize);
+        debugSensorDistance();
+        //debugPID();
+        //debugDelay();
+        restartPID();
+      }else if (algo_c == "4") {
+        goStraightNGrids(4);
+        getSensorsDistanceRM(sensorSampleSize);
+        debugSensorDistance();
+        //debugPID();
+        //debugDelay();
+        restartPID();
+      }else if (algo_c == "5") {
+        goStraightNGrids(5);
+        getSensorsDistanceRM(sensorSampleSize);
+        debugSensorDistance();
+        //debugPID();
+        //debugDelay();
+        restartPID();
+      }
+      else if (algo_c == "L") {
         turnLeftOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         debugSensorDistance();
-        // print pid value
-        //debugPID();
-        //print delay time
-        //debugDelay();
         restartPID();
       } else if (algo_c == "R") {
         turnRightOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
         delay(explorationDelay);
         debugSensorDistance();
-       // debugPID();
-        //debugDelay();
         restartPID();
       } else if (algo_c == "D") {
         turnRightOneGrid();
@@ -276,16 +311,14 @@ void exploration()
         restartPID();
         turnRightOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
-        delay(explorationDelay);
+        debugSensorDistance();
         restartPID();
       } else if (algo_c == "Z") {
         getSensorsVoltageRM(sensorSampleSize);
         getSensorsDistanceRM(sensorSampleSize);
-        delay(explorationDelay);
         debugSensorDistance();
       } else if (algo_c == "#") {
         explorationFlag = false;
-        delay(explorationDelay);
         return;
       } else if (algo_c == "C") {
         calibrate();
@@ -381,7 +414,7 @@ void goStraightNGrids(int n)
   totalDistance = 0;
   while (1) {
     if (totalDistance >= distanceToMove) {
-      md.setBrakes(400, 400);
+      md.setBrakes(350, 350);
       break;
     } else {
       moveForward();
@@ -394,8 +427,8 @@ void moveForward()
 {
   PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
   // 150 change to moveSpeed later !!!
-  md.setSpeeds(PIDOutputRightME * 150, PIDOutputLeftME * 150);
-  // delayMicroseconds(moveForwardDelay);
+//  md.setSpeeds(PIDOutputRightME * moveSpeed, PIDOutputLeftME * moveSpeed);
+  md.setSpeeds(moveSpeed, moveSpeed);
   delay(moveForwardDelay);
 }
 
@@ -407,7 +440,7 @@ void turnLeftOneGrid()
       md.setBrakes(400, 400);
       break;
     } else {
-      md.setSpeeds(moveSpeed,-moveSpeed);
+      md.setSpeeds(turnSpeed,-turnSpeed);
 //      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
 //      md.setSpeeds(PIDOutputRightME * 150, -PIDOutputLeftME * 150);
       delay(turnDelay);
@@ -424,7 +457,7 @@ void turnRightOneGrid()
       md.setBrakes(400, 400);
       break;
     } else {
-      md.setSpeeds(-moveSpeed,moveSpeed);
+      md.setSpeeds(-turnSpeed,turnSpeed);
 //      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
 //      md.setSpeeds(-PIDOutputRightME * 150, PIDOutputLeftME * 150);
       delay(turnDelay);
