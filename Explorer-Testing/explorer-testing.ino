@@ -154,11 +154,11 @@ void setup()
 void loop()
 {
   if (Serial.available() > 0) {
-    char cc = char(Serial.read());
-    if (cc == 'E') {
+    sRead = char(Serial.read());
+    if (sRead == "E") {
       explorationFlag = true;
       exploration();
-    } else if (cc == 'F') {
+    } else if (sRead == "F") {
       fastestPathFlag = true;
       //fastestPath();
     }
@@ -172,10 +172,12 @@ void exploration()
   getSensorsDistanceRM(sensorSampleSize);
   while (explorationFlag) {
     if (Serial.available() > 0) {
-      sRead = Serial.readString();
-      test_c = sRead.substring(0,2);
-      algo_c = sRead.substring(0,1);
-      sRead = sRead.substring(2);
+     sRead = Serial.readString();
+     sRead.trim();  // to remove \n
+     test_c = sRead.substring(0,2);
+     algo_c = sRead.substring(0,1);
+//     Serial.println(sRead);
+//      Serial.println(algo_c);
       // delay 
       delay(explorationDelay);
       // Testing commands
@@ -286,6 +288,13 @@ void exploration()
         //debugDelay();
         restartPID();
       }else if (algo_c == "5") {
+        goStraightNGrids(5);
+        getSensorsDistanceRM(sensorSampleSize);
+        debugSensorDistance();
+        //debugPID();
+        //debugDelay();
+        restartPID();
+      }else if (algo_c == "9") {
         goStraightNGrids(5);
         getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
@@ -426,7 +435,7 @@ void goStraightNGrids(int n)
 void moveForward()
 {
   PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-  // 150 change to moveSpeed later !!!
+  // why PIDOutputRightME is the first?
 //  md.setSpeeds(PIDOutputRightME * moveSpeed, PIDOutputLeftME * moveSpeed);
   md.setSpeeds(moveSpeed, moveSpeed);
   delay(moveForwardDelay);
