@@ -23,9 +23,11 @@ float kdLeftME = 0.1;
 float kpRightME = 2.70; 
 float kiRightME = 0.180;
 float kdRightME = 0.1;
+int setpoint = 80;
+float soffset = -0.25;
 
 // Robot Movement
-unsigned int oneGridDistance = 2900;
+unsigned int oneGridDistance = 2850;
 unsigned int turnGridDistance = 14500;
 unsigned int moveSpeed = 300;
 unsigned int turnSpeed = 250;
@@ -33,7 +35,7 @@ unsigned int turnSpeed = 250;
 float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
 float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.5;  // error within this value not trigger calibration
-float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 6.75};
+float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5/2, 6.75/2};
 float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4}; 
 // delay
 int moveForwardDelay = 15; // Original = 4450
@@ -43,30 +45,31 @@ int calibrationDelay = 10; // Not used
 // COUNTER 
 int COUNT_MOVE = 5;  //counter the num of forward movement
 //sensor Range
-float SRFRONT_1_RANGE[3] = {13.02, 26.40, 40.95};
-float SRFRONT_2_RANGE[3] = {12.47, 22.70, 35.54};
-float SRFRONT_3_RANGE[3] = {12.05, 22.20, 37.32};
-float SRLEFT_1_RANGE[3] = {9.33, 18.80, 27.32};
-float SRLEFT_2_RANGE[3] = {9.31, 17.94, 25.25};
-float LRRIGHT_1_RANGE[3] = {9.51, 20.55, 29.54}; //[0]=10.11
-
+float SRFRONT_1_RANGE[3] = {12.10, 22.50, 24.95};
+float SRFRONT_2_RANGE[3] = {12.80, 21.70, 24.95};
+float SRFRONT_3_RANGE[3] = {12.10, 22.52, 30.72}; //DONE
+float SRLEFT_1_RANGE[3] = {13.63, 20.60, 27.52};
+float SRLEFT_2_RANGE[3] = {13.63, 20.60, 26.45};
+float LRRIGHT_1_RANGE[3] = {13.90, 20.55, 29.54}; //[0]=10.11
 
 // Initialisation
 DualVNH5019MotorShield md;
 // Old
-//SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 4620.2, 8.10397, -36.7569);
-//SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 11750.6, 14.7919, 136.813);
-//SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5340.28, 9.47195, -11.1088);
-//SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 6852.53, 9.900, 16.1893);
-//SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 8273.7, 11.014, 63.616);
-//SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 24845.1, 21.719, 212.088);
+//OLD ONE : 
+SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 4620.2, 8.10397, -36.7569);
+//SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 5340.28, 9.47195, -11.1088);
+SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 11750.6, 14.7919, 136.813);
+SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5340.28, 9.47195, -11.1088);
+SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 6852.53, 9.900, 16.1893);
+SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 8273.7, 11.014, 63.616);
+SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 24845.1, 21.719, 212.088);
 // New
-SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 3509.11, 10.1626, -83.674);
-SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 5305.81, 11.1486, -34.9659);
-SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5122.21, 12.9189, -31.1762);
-SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 5177.84, 11.0427, -21.9181);
-SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 7840.02, 14.9919, 43.0052);
-SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 302904, 169.317, 1249.89);
+//SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 3509.11, 10.1626, -83.674);
+//SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 5305.81, 11.1486, -34.9659);
+//SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5122.21, 12.9189, -31.1762);
+//SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 5177.84, 11.0427, -21.9181);
+//SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 7840.02, 14.9919, 43.0052);
+//SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 302904, 169.317, 1249.89);
 // Parameters Declaration
 //PID Calculation
 unsigned long startTimeRightME = 0;
@@ -96,7 +99,6 @@ float PIDOutputLeftME = 0;
 float previousPIDOutputLeftME = 0;
 float PIDOutputRightME = 0;
 float previousPIDOutputRightME = 0;
-int setpoint = 80;
 unsigned int distanceToMove = 0;
 unsigned int totalDistance = 0;
 // Sensors
@@ -176,7 +178,7 @@ void exploration()
      sRead.trim();  // to remove \n
      test_c = sRead.substring(0,2);
      algo_c = sRead.substring(0,1);
-//     Serial.println(sRead);
+//      Serial.println(sRead);
 //      Serial.println(algo_c);
       // delay 
       delay(explorationDelay);
@@ -237,6 +239,10 @@ void exploration()
         moveSpeed = sRead.toInt();
       }else if(test_c == "38"){
         turnSpeed = sRead.toInt();
+      }else if(test_c == "39"){
+        setpoint = sRead.toInt();
+      }else if(test_c == "40"){
+        soffset = sRead.toInt();
       }
       else if (test_c == "DC") {
         delay(10);
@@ -434,10 +440,10 @@ void goStraightNGrids(int n)
 
 void moveForward()
 {
-  PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
+  //PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
   // why PIDOutputRightME is the first?
 //  md.setSpeeds(PIDOutputRightME * moveSpeed, PIDOutputLeftME * moveSpeed);
-  md.setSpeeds(moveSpeed, moveSpeed);
+  md.setSpeeds(moveSpeed, moveSpeed + soffset);
   delay(moveForwardDelay);
 }
 
@@ -596,7 +602,7 @@ void getSensorsDistanceRM(int n)
 void calibrate() {
   float frontSensor3ToWall = SRSensorFront3.distance();  //getDistance(1);
   float frontSensor1ToWall = SRSensorFront1.distance(); //getDistance(3);
-  if(frontSensor3ToWall > MIN_DISTANCE_CALIBRATE + 10 || frontSensor1ToWall > MIN_DISTANCE_CALIBRATE + 10) return;
+  if(frontSensor3ToWall > MIN_DISTANCE_CALIBRATE + 10 && frontSensor1ToWall > MIN_DISTANCE_CALIBRATE + 10) return;
   delay(calibrationDelay);
   calibrateFrontAngle();
   delay(calibrationDelay);
@@ -753,7 +759,7 @@ void debugSensorDistance()
 {
   debugOutput = "d";
   debugOutput = debugOutput + srSensorFront1Distance + " | " + srSensorFront2Distance + " | " + srSensorFront3Distance + " | " + srSensorLeft1Distance + " | " + srSensorLeft2Distance + " | " + lrSensorRight1Distance;
-//  Serial.println(debugOutput);
+  Serial.println(debugOutput);
 }
 
 void debugPID()
