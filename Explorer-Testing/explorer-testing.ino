@@ -28,15 +28,17 @@ float soffset = -0.25;
 
 // Robot Movement
 unsigned int oneGridDistance = 2850;
-unsigned int turnGridDistance = 14500;
+unsigned int turnGridDistance = 14600; //ori=14500
 unsigned int moveSpeed = 300;
 unsigned int turnSpeed = 250;
 // auto-cali parameters
+float MIN_DISTANCE_LEFT_CALIBRATE = 3.5;
 float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
 float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.5;  // error within this value not trigger calibration
 float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5/2, 6.75/2};
-float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {4.5, 5.4}; 
+float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {1.5/2, 2.5/2}; 
+
 // delay
 int moveForwardDelay = 15; // Original = 4450
 int turnDelay = 5;  // Original = 4700
@@ -266,6 +268,7 @@ void exploration()
       // Algo commands
       else if (algo_c == "U") {
         goStraightNGrids(1);
+        calibrateLeftDistance();
         getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
         delay(explorationDelay);
@@ -337,6 +340,9 @@ void exploration()
         return;
       } else if (algo_c == "C") {
         calibrate();
+        getSensorsDistanceRM(sensorSampleSize);
+      } else if(algo_c == "T") {
+        calibrateLeftDistance();
       }
     }
   }
@@ -700,23 +706,31 @@ void calibrateLeftDistance()
   leftSensor1ToWall = SRSensorLeft1.distance();
   leftSensor2ToWall = SRSensorLeft2.distance();
   float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
-  if(leftSensor1ToWall > MIN_DISTANCE_CALIBRATE ||  leftSensor2ToWall > MIN_DISTANCE_CALIBRATE){
+  if(leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE ||  leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE){
     return;
   }
 
 //abort if within margin of error
-  if (diff < LEFT_ANGLE_CALIBRATION_THRESHOLD && ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]))) {
+  if ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1])) {
     return;
     }
-  if (diff >= LEFT_ANGLE_CALIBRATION_THRESHOLD || (leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0]) || (leftSensor1ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1] && leftSensor2ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1])) 
-  {
+  else{
     calibrateTurnLeftOneGrid();
     calibrateFrontDistance(1.5);
     delay(calibrationDelay);
-    calibrateFrontAngle();
+//    calibrateFrontAngle();
     delay(calibrationDelay); 
     calibrateTurnRightOneGrid();
   }
+//  if ((leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[0]) || (leftSensor1ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1] && leftSensor2ToWall > LEFT_SENSORS_DISTANCE_THRESHOLD[1])) 
+//  {
+//    calibrateTurnLeftOneGrid();
+//    calibrateFrontDistance(1.5);
+//    delay(calibrationDelay);
+//    calibrateFrontAngle();
+//    delay(calibrationDelay); 
+//    calibrateTurnRightOneGrid();
+//  }
 }
 
 void calibrateTurnLeftOneGrid()
