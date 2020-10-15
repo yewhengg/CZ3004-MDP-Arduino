@@ -50,8 +50,8 @@ int COUNT_MOVE = 5;  //counter the num of forward movement
 float SRFRONT_1_RANGE[3] = {12.80, 22.50, 25.90}; // {12.10, 22.50, 24.95}
 float SRFRONT_2_RANGE[3] = {12.10, 21.70, 24.95}; //{12.80, 21.70, 24.95}
 float SRFRONT_3_RANGE[3] = {12.10, 22.52, 30.72}; //{12.10, 22.52, 30.72}
-float SRLEFT_1_RANGE[3] = {10.60, 20.60, 27.52}; //{13.63, 20.60, 27.52}
-float SRLEFT_2_RANGE[3] = {11.30, 20.60, 26.45}; //{13.63, 20.60, 26.45}
+float SRLEFT_1_RANGE[3] = {10.40, 20.60, 27.52}; //{13.63, 20.60, 27.52}
+float SRLEFT_2_RANGE[3] = {11.10, 20.60, 26.45}; //{13.63, 20.60, 26.45}
 float LRRIGHT_1_RANGE[3] = {13.90, 20.55, 29.54}; //{13.90, 20.55, 29.54}
 
 // Initialisation
