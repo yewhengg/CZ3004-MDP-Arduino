@@ -28,7 +28,7 @@ float soffset = -0.25;
 
 
 // Robot Movement
-unsigned int oneGridDistance = 2850;
+unsigned int oneGridDistance = 2900;
 unsigned int turnGridDistance = 14600; //ori=14500
 unsigned int moveSpeed = 300;
 unsigned int turnSpeed = 250;
@@ -48,17 +48,18 @@ int calibrationDelay = 10; // Not used
 // COUNTER 
 int COUNT_MOVE = 5;  //counter the num of forward movement
 //sensor Range
-float SRFRONT_1_RANGE[3] = {12.80, 22.50, 25.90}; // {12.10, 22.50, 24.95}
-float SRFRONT_2_RANGE[3] = {12.10, 21.70, 24.95}; //{12.80, 21.70, 24.95}
-float SRFRONT_3_RANGE[3] = {12.10, 22.52, 30.72}; //{12.10, 22.52, 30.72}
-float SRLEFT_1_RANGE[3] = {10.40, 20.60, 27.52}; //{13.63, 20.60, 27.52}
-float SRLEFT_2_RANGE[3] = {11.10, 20.60, 26.45}; //{13.63, 20.60, 26.45}
-float LRRIGHT_1_RANGE[5] = {13.90, 20.55, 29.54, 39.54, 49.54}; //{13.90, 20.55, 29.54}
+float SRFRONT_1_RANGE[3] = {12.13, 28.32, 37.55}; // {12.10, 22.50, 24.95}
+float SRFRONT_2_RANGE[3] = {13.82, 24.51, 36.02}; //{12.80, 21.70, 24.95}
+float SRFRONT_3_RANGE[3] = {16.75, 27.46, 40.75}; //{12.10, 22.52, 30.72}
+float SRLEFT_1_RANGE[3] = {14.05, 24.32, 34.17}; //{13.63, 20.60, 27.52}
+float SRLEFT_2_RANGE[3] = {14.13, 24.62, 32.16}; //{13.63, 20.60, 26.45}
+float LRRIGHT_1_RANGE[5] = {14.12, 24.85, 34.92, 44.04, 51.21}; //{13.90, 20.55, 29.54}
 
 // Initialisation
 DualVNH5019MotorShield md;
 
 SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 1363.2, 2.14817, -140.601);
+// SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 5709.05, 8.50633, -3.04403);
 SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 5709.05, 8.50633, -3.04403);
 SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5850.23, 9.47195, -11.1088);
 SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 5285.29, 8.24699, -14.8405);
@@ -150,6 +151,8 @@ void setup()
 
 void loop()
 {
+  getSensorsDistanceRM(sensorSampleSize);
+  debugSensorDistance();
   if (Serial.available() > 0) {
     sRead = char(Serial.read());
     if (sRead == "E") {
@@ -170,7 +173,7 @@ void exploration()
   while (explorationFlag) {
     if (Serial.available() > 0) {
      sRead = Serial.readString();
-//     sRead.trim();  // to remove \n
+     sRead.trim();  // to remove \n
      test_c = sRead.substring(0,2);
      algo_c = sRead.substring(0,1);
 //      Serial.println(sRead);
@@ -264,8 +267,8 @@ void exploration()
       else if (algo_c == "U") {
         goStraightNGrids(1);
         delay(explorationDelay);
-        calibrateLeftAngle();
-        delay(explorationDelay);
+//        calibrateLeftAngle();
+//        delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
         delay(explorationDelay);
@@ -432,6 +435,7 @@ void restartPID() {
 
 void goStraightNGrids(int n)
 {
+//  Serial.println("goStraightNGrids");
   distanceToMove = n * oneGridDistance;
   totalDistance = 0;
   while (1) {
@@ -698,7 +702,8 @@ void calibrateLeftSensorsAngle(float error)
 }
 void calibrateLeftAngle()
 {
-   leftSensor1ToWall = SRSensorLeft1.distance();
+//  Serial.println("calibrateLeftAngle");
+  leftSensor1ToWall = SRSensorLeft1.distance();
    leftSensor2ToWall = SRSensorLeft2.distance();
   if(leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE && leftSensor2ToWall >  MIN_DISTANCE_LEFT_CALIBRATE){
     return;
