@@ -26,18 +26,19 @@ float kdRightME = 0.1;
 int setpoint = 80;
 float soffset = -0.25;
 
+
 // Robot Movement
 unsigned int oneGridDistance = 2850;
 unsigned int turnGridDistance = 14600; //ori=14500
 unsigned int moveSpeed = 300;
 unsigned int turnSpeed = 250;
 // auto-cali parameters
-float MIN_DISTANCE_LEFT_CALIBRATE = 7.0;
+float MIN_DISTANCE_LEFT_CALIBRATE = 2.0;
 float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
-float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.3;  // error within this value not trigger calibration
+float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.8;  // error within this value not trigger calibration
 float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {5.5/2, 6.75/2};
-float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {1.0, 3.0}; //{2.5/2, 3.5/2};
+//float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {1.0, 3.0}; //{2.5/2, 3.5/2};
 
 // delay
 int moveForwardDelay = 15; // Original = 4450
@@ -52,25 +53,18 @@ float SRFRONT_2_RANGE[3] = {12.10, 21.70, 24.95}; //{12.80, 21.70, 24.95}
 float SRFRONT_3_RANGE[3] = {12.10, 22.52, 30.72}; //{12.10, 22.52, 30.72}
 float SRLEFT_1_RANGE[3] = {10.40, 20.60, 27.52}; //{13.63, 20.60, 27.52}
 float SRLEFT_2_RANGE[3] = {11.10, 20.60, 26.45}; //{13.63, 20.60, 26.45}
-float LRRIGHT_1_RANGE[3] = {13.90, 20.55, 29.54}; //{13.90, 20.55, 29.54}
+float LRRIGHT_1_RANGE[5] = {13.90, 20.55, 29.54, 39.54, 49.54}; //{13.90, 20.55, 29.54}
 
 // Initialisation
 DualVNH5019MotorShield md;
-// Old
-//OLD ONE : 
-//SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 4620.2, 8.10397, -36.7569);
-//SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 11750.6, 14.7919, 136.813);
-//SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5340.28, 9.47195, -11.1088);
-//SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 7454.29, 10.7507, 37.5053); //6852.53, 9.900, 16.1893
-//SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 9017.33, 12.0536, 80.4536);
-//SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 24845.1, 21.719, 212.088);
-// New
-SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 3509.11, 10.1626, -83.674);
-SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 5305.81, 11.1486, -34.9659);
-SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5122.21, 12.9189, -31.1762);
-SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 5177.84, 11.0427, -21.9181);
-SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 7840.02, 14.9919, 43.0052);
-SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 302904, 169.317, 1249.89);
+
+SharpIR SRSensorFront1(srSensorFront1, SRSensor_Model, 1363.2, 2.14817, -140.601);
+SharpIR SRSensorFront2(srSensorFront2, SRSensor_Model, 5709.05, 8.50633, -3.04403);
+SharpIR SRSensorFront3(srSensorFront3, SRSensor_Model, 5850.23, 9.47195, -11.1088);
+SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 5285.29, 8.24699, -14.8405);
+SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 5440.65, 7.79677, -2.86093);
+SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 94637.7, 83.5766, 541.154);
+
 // Parameters Declaration
 //PID Calculation
 unsigned long startTimeRightME = 0;
@@ -218,11 +212,13 @@ void exploration()
         FRONT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
       }else if(test_c == "27"){
         FRONT_SENSORS_DISTANCE_THRESHOLD[1] = sRead.toFloat();
-      }else if(test_c == "28"){
-        LEFT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
-      }else if(test_c == "29"){
-        LEFT_SENSORS_DISTANCE_THRESHOLD[1] = sRead.toFloat();
-      }else if(test_c == "30"){
+      }
+//      else if(test_c == "28"){
+//        LEFT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
+//      }else if(test_c == "29"){
+//        LEFT_SENSORS_DISTANCE_THRESHOLD[1] = sRead.toFloat();
+//      }
+      else if(test_c == "30"){
         SRFRONT_1_RANGE[0] = sRead.toFloat();
       }else if(test_c == "31"){
         SRFRONT_1_RANGE[1] = sRead.toFloat();
@@ -268,13 +264,14 @@ void exploration()
       else if (algo_c == "U") {
         goStraightNGrids(1);
         delay(explorationDelay);
-        calibrateLeftDistance();
+        calibrateLeftAngle();
+        delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
         delay(explorationDelay);
         //debugPID();
         //debugDelay();
-        restartPID();
+        //restartPID();
       }else if (algo_c == "2") {
         goStraightNGrids(2);
         getSensorsDistanceRM(sensorSampleSize);
@@ -341,9 +338,11 @@ void exploration()
       } else if (algo_c == "C") {
         calibrate();
         getSensorsDistanceRM(sensorSampleSize);
-      } else if(algo_c == "T") {
-        calibrateLeftDistance();
-      } else if(algo_c == "P") {
+      } 
+//      else if(algo_c == "T") {
+//        calibrateLeftDistance();
+//      } 
+      else if(algo_c == "P") {
         calibrateLeftAngle();
       }
     }
@@ -699,13 +698,15 @@ void calibrateLeftSensorsAngle(float error)
 }
 void calibrateLeftAngle()
 {
-  Serial.println("=== calibrateLeftAngle ===");
+   leftSensor1ToWall = SRSensorLeft1.distance();
+   leftSensor2ToWall = SRSensorLeft2.distance();
+  if(leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE && leftSensor2ToWall >  MIN_DISTANCE_LEFT_CALIBRATE){
+    return;
+  }
   int counter = 0;
-  leftSensor1ToWall = 0;
-  leftSensor2ToWall = 0;
   float calibrationAngleError = 0;
   double angleDist = 0;
-  while(counter < 100){
+  while(counter < 15){
     leftSensor1ToWall = SRSensorLeft1.distance();
     leftSensor2ToWall = SRSensorLeft2.distance();
     calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
@@ -714,7 +715,6 @@ void calibrateLeftAngle()
       break;
     }
     calibrateLeftSensorsAngle(calibrationAngleError);
-    md.setBrakes(400,400);
   }
 }
 void calibrateFrontAngle()
@@ -739,76 +739,42 @@ void calibrateFrontAngle()
 
 
 
-void calibrateLeftDistance()
-{
-  Serial.println("=== calibrateLeftDistance ===");
-  // Function that implement the logic when to turn left 90degree, and then call calibrateFrontDistance. 
-  leftSensor1ToWall = 0;
-  leftSensor2ToWall = 0;
-  leftSensor1ToWall = SRSensorLeft1.distance();
-  leftSensor2ToWall = SRSensorLeft2.distance();
-  Serial.println(leftSensor1ToWall);
-  Serial.println(leftSensor2ToWall);
-  float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
-  if(leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE &&  leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE){
-    
-    return;
-  }
-  else{
-    calibrateLeftAngle();
-//abort if within margin of error
-  if ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1])) {
-    return;
-    }
-  else{
-delay(calibrationDelay);
-turnLeftOneGrid();
-delay(calibrationDelay);
-    calibrate();
-    delay(calibrationDelay);
-//    calibrateFrontAngle();
-//    delay(calibrationDelay); 
-//    calibrateTurnRightOneGrid();
-turnRightOneGrid();
- delay(calibrationDelay);
-calibrateLeftAngle();
-  }
-  }
-}
-
-void calibrateTurnLeftOneGrid()
-{
-  totalDistance = 0;
-  while (1) {
-    if (totalDistance >= turnGridDistance + 400) {
-      md.setBrakes(400, 400);
-      break;
-    } else {
-      md.setSpeeds(200, -200);
-//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 50);
-//      md.setSpeeds(PIDOutputRightME * 100, -PIDOutputLeftME * 100);
-      delay(turnDelay);
-      totalDistance = totalDistance + RPMLeft + RPMRight; 
-    }
-  }
-}
-
-void calibrateTurnRightOneGrid()
-{
-  totalDistance = 0;
-  while (1) {
-    if (totalDistance > turnGridDistance + 800) {
-      md.setBrakes(400, 400);
-      break;
-    } else {
-      md.setSpeeds(-100, 100);
-//      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 50);
-//      md.setSpeeds(-PIDOutputRightME * 100, PIDOutputLeftME * 100);
-      delay(turnDelay);
-      totalDistance = totalDistance + RPMLeft + RPMRight; 
-    }
-  }
-}
+//void calibrateLeftDistance()
+//{
+//  Serial.println("=== calibrateLeftDistance ===");
+//  // Function that implement the logic when to turn left 90degree, and then call calibrateFrontDistance. 
+//  leftSensor1ToWall = 0;
+//  leftSensor2ToWall = 0;
+//  leftSensor1ToWall = SRSensorLeft1.distance();
+//  leftSensor2ToWall = SRSensorLeft2.distance();
+//  Serial.println(leftSensor1ToWall);
+//  Serial.println(leftSensor2ToWall);
+//  float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
+//  if(leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE &&  leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE){
+//    
+//    return;
+//  }
+//  else{
+//    calibrateLeftAngle();
+////abort if within margin of error
+//  if ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1])) {
+//    return;
+//    }
+//  else{
+//delay(calibrationDelay);
+//turnLeftOneGrid();
+//delay(calibrationDelay);
+//    calibrate();
+//    delay(calibrationDelay);
+////    calibrateFrontAngle();
+////    delay(calibrationDelay); 
+////    calibrateTurnRightOneGrid();
+//turnRightOneGrid();
+// delay(calibrationDelay);
+//calibrateLeftAngle();
+//  }
+//  }
+//}
 
 // ==================== Debug (To Remove) ====================
 
