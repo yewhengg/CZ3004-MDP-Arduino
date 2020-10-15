@@ -170,7 +170,7 @@ void exploration()
   while (explorationFlag) {
     if (Serial.available() > 0) {
      sRead = Serial.readString();
-     sRead.trim();  // to remove \n
+//     sRead.trim();  // to remove \n
      test_c = sRead.substring(0,2);
      algo_c = sRead.substring(0,1);
 //      Serial.println(sRead);
