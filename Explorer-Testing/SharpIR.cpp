@@ -41,6 +41,6 @@ double SharpIR::distance() const {
 	} else if (_model == GP2Y0A02YK0F && irValue < LRVMin) {
 		irValue = LRVMin ;
 	}
-	distance = (_m / (irValue + _k)) - _b;
+	distance = (_m / (irValue + _b)) - _k;
 	return distance;
 }
