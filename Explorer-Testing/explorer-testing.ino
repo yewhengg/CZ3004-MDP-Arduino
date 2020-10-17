@@ -38,7 +38,7 @@ unsigned int turnSpeed = 250;
 float MIN_DISTANCE_LEFT_CALIBRATE = 2.0;
 float MIN_DISTANCE_CALIBRATE = 12;   // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;  // error within this value not trigger calibration
-float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.05;  // error within this value not trigger calibration
+float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.10;  // error within this value not trigger calibration
 float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = {6 / 2, 7.0 / 2};
 float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {1.0, 3.0}; //{2.5/2, 3.5/2};
 
@@ -361,7 +361,8 @@ void exploration()
         getSensorsDistanceRM(sensorSampleSize);
       }
         else if(algo_c == "B") {
-          calibrateLeftDistance();
+        calibrateLeftDistance();
+         getSensorsDistanceRM(sensorSampleSize);
         }
       else if (algo_c == "P") {
         calibrateLeftAngle();
