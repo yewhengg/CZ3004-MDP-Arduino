@@ -190,8 +190,8 @@ void exploration()
       test_c = sRead.substring(0, 2);
       algo_c = sRead.substring(0, 1);
       sRead = sRead.substring(2);
-            Serial.println(sRead);
-            Serial.println(algo_c);
+            // Serial.println(sRead);
+            // Serial.println(algo_c);
       // Testing Commands
       if (test_c == "11") {
         MIN_DISTANCE_CALIBRATE = sRead.toFloat();
@@ -256,7 +256,7 @@ void exploration()
       } else if (test_c == "39") {
         setpoint = sRead.toInt();
       } else if (test_c == "40") {
-         Serial.println(sRead);
+        //  Serial.println(sRead);
         soffset = sRead.toFloat();
       }
       else if (test_c == "DC") {
@@ -510,28 +510,28 @@ void turnRightOneGrid()
 
 // ==================== Sensors ====================
 
-void getSensorsVoltageRM(int n)
-{
-  counter = 0;
-  analogReadings.clear();
-  analogReadings2.clear();
-  for (counter = 0; counter < n; counter++) {
-//        analogReadings.add(analogRead(srSensorFront1));
-//        analogReadings2.add(analogRead(srSensorFront2));
-//        analogReadings3.add(analogRead(srSensorFront3));
-//        analogReadings.add(analogRead(srSensorLeft1));
-//        analogReadings2.add(analogRead(srSensorLeft2));
-    //    analogReadings.add(analogRead(lrSensorRight1));
-  }
-  Serial.println("===== Median ====");
-//  Serial.println(analogReadings.getMedian());
-//  Serial.println(analogReadings2.getMedian());
-//  Serial.println(analogReadings3.getMedian());
+// void getSensorsVoltageRM(int n)
+// {
+//   counter = 0;
+//   analogReadings.clear();
+//   analogReadings2.clear();
+//   for (counter = 0; counter < n; counter++) {
+// //        analogReadings.add(analogRead(srSensorFront1));
+// //        analogReadings2.add(analogRead(srSensorFront2));
+// //        analogReadings3.add(analogRead(srSensorFront3));
+// //        analogReadings.add(analogRead(srSensorLeft1));
+// //        analogReadings2.add(analogRead(srSensorLeft2));
+//     //    analogReadings.add(analogRead(lrSensorRight1));
+//   }
+//   Serial.println("===== Median ====");
+// //  Serial.println(analogReadings.getMedian());
+// //  Serial.println(analogReadings2.getMedian());
+// //  Serial.println(analogReadings3.getMedian());
   
-//  Serial.println("===== Average =====");
-//  Serial.println(analogReadings.getAverage(5));
-//  Serial.println(analogReadings2.getAverage(5));
-}
+// //  Serial.println("===== Average =====");
+// //  Serial.println(analogReadings.getAverage(5));
+// //  Serial.println(analogReadings2.getAverage(5));
+// }
 
 //void getSensorsVoltageRM1(int n)
 //{
@@ -771,7 +771,7 @@ void calibrateLeftAngle()
   int counter = 0;
   float calibrationAngleError = 0;
   double angleDist = 0;
-  while (counter < 20) {
+  while (counter < 3) {
     leftSensor1ToWall = SRSensorLeft1.distance();
     leftSensor2ToWall = SRSensorLeft2.distance();
     calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
@@ -806,14 +806,14 @@ void calibrateFrontAngle()
 
 void calibrateLeftDistance()
 {
-  Serial.println("=== calibrateLeftDistance ===");
+  // Serial.println("=== calibrateLeftDistance ===");
   // Function that implement the logic when to turn left 90degree, and then call calibrateFrontDistance.
   leftSensor1ToWall = 0;
   leftSensor2ToWall = 0;
   leftSensor1ToWall = SRSensorLeft1.distance();
   leftSensor2ToWall = SRSensorLeft2.distance();
-  Serial.println(leftSensor1ToWall);
-  Serial.println(leftSensor2ToWall);
+  // Serial.println(leftSensor1ToWall);
+  // Serial.println(leftSensor2ToWall);
   float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
   if(leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE && leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE){
     return;
