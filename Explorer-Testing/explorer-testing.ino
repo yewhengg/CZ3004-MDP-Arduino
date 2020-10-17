@@ -45,7 +45,7 @@ float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {1.0, 3.0}; //{2.5/2, 3.5/2};
 // Delay
 int moveForwardDelay = 15; // Original = 4450
 int turnDelay = 5;  // Original = 4700
-int explorationDelay = 125; // Original = 125, try 2.5
+int explorationDelay = 0; // Original = 125, try 2.5
 int calibrationDelay = 10; // Not used
 
 // COUNTER
@@ -192,8 +192,6 @@ void exploration()
       sRead = sRead.substring(2);
             Serial.println(sRead);
             Serial.println(algo_c);
-      // Delay
-      delay(explorationDelay);
       // Testing Commands
       if (test_c == "11") {
         MIN_DISTANCE_CALIBRATE = sRead.toFloat();
@@ -289,7 +287,6 @@ void exploration()
         //        delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
-        delay(explorationDelay);
         //debugPID();
         //debugDelay();
         //restartPID();
