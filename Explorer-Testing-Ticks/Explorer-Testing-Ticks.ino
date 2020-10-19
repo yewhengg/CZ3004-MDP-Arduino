@@ -112,10 +112,10 @@ float leftSensor2ToWall = 0;
 float calibrationAngleError = 0;
 
 // Others
-String cc = "";
-//String sRead = "";
-//String algo_c = "";
-//String test_c = "";
+//String cc = "";
+String sRead = "";
+String algo_c = "";
+String test_c = "";
 boolean explorationFlag = false;
 boolean fastestPathFlag = false;
 
@@ -151,11 +151,11 @@ void loop()
   //goStraightNGrids(1);
   //delay(100);
   if (Serial.available() > 0) {
-    cc = char(Serial.read());
-    if (cc == "E") {
+    sRead = char(Serial.read());
+    if (sRead == "E") {
       explorationFlag = true;
       exploration();
-    } else if (cc == "F") {
+    } else if (sRead == "F") {
       fastestPathFlag = true;
       fastestPath();
     }
@@ -169,24 +169,128 @@ void exploration()
   getSensorsDistanceRM(sensorSampleSize);
   while (explorationFlag) {
     if (Serial.available() > 0) {
-      cc = char(Serial.read());
-      if (cc == "U") {
+      sRead = Serial.readString();
+//      sRead.trim(); // to remove \n, 
+// To integrate with algo use explorer-latest-ticks one
+      test_c = sRead.substring(0, 2);
+      algo_c = sRead.substring(0, 1);
+      sRead = sRead.substring(2);
+      if (test_c == "11")
+      {
+        MIN_DISTANCE_CALIBRATE = sRead.toFloat();
+      }
+      else if (test_c == "12")
+      {
+        ANGLE_CALIBRATION_THRESHOLD = sRead.toFloat();
+      }
+      else if (test_c == "13")
+      {
+        LEFT_ANGLE_CALIBRATION_THRESHOLD = sRead.toFloat();
+      }
+      /*
+      else if (test_c == "14")
+      {
+        kpLeftME = sRead.toFloat();
+      }
+      else if (test_c == "15")
+      {
+        kiLeftME = sRead.toFloat();
+      }
+      else if (test_c == "16")
+      {
+        kdLeftME = sRead.toFloat();
+      }
+      else if (test_c == "17")
+      {
+        kpRightME = sRead.toFloat();
+      }
+      else if (test_c == "18")
+      {
+        kiRightME = sRead.toFloat();
+      }
+      else if (test_c == "19")
+      {
+        kdRightME = sRead.toFloat();
+      }
+      */
+      else if (test_c == "20")
+      {
+        forwardTicks = sRead.toInt();
+      }
+      else if (test_c == "21")
+      {
+        leftTurnTicks = sRead.toInt();
+      }
+      else if (test_c == "22")
+      {
+        rightTurnTicks = sRead.toInt();
+      }
+      else if (test_c == "23")
+      {
+        turnDelay = sRead.toInt();
+      }
+      else if (test_c == "24")
+      {
+        explorationDelay = sRead.toInt();
+      }
+      else if (test_c == "25")
+      {
+        calibrationDelay = sRead.toInt();
+      }
+      else if (test_c == "26")
+      {
+        FRONT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
+      }
+      else if (test_c == "27")
+      {
+        FRONT_SENSORS_DISTANCE_THRESHOLD[1] = sRead.toFloat();
+      }
+      else if(test_c == "28"){
+        LEFT_SENSORS_DISTANCE_THRESHOLD[0] = sRead.toFloat();
+      }else if(test_c == "29"){
+        LEFT_SENSORS_DISTANCE_THRESHOLD[1] = sRead.toFloat();
+      }
+      else if (test_c == "30")
+      {
+        SRFRONT_1_RANGE[0] = sRead.toFloat();
+      }
+      else if (test_c == "31")
+      {
+        SRFRONT_1_RANGE[1] = sRead.toFloat();
+      }
+      else if (test_c == "32")
+      {
+        SRFRONT_2_RANGE[0] = sRead.toFloat();
+      }
+      else if (test_c == "33")
+      {
+        SRFRONT_2_RANGE[1] = sRead.toFloat();
+      }
+      else if (test_c == "34")
+      {
+        SRFRONT_3_RANGE[0] = sRead.toFloat();
+      }
+      else if (test_c == "35")
+      {
+        SRFRONT_3_RANGE[1] = sRead.toInt();
+      }
+      if (algo_c == "U") {
         goStraightNGrids(1);
         delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
-      } else if (cc == "L") {
+      } else if (algo_c == "L") {
         turnLeftOneGrid();
         delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
-      } else if (cc == "R") {
+      } else if (algo_c == "R") {
         turnRightOneGrid();
         delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
-      } else if (cc == "Z") {
+      } else if (algo_c == "Z") {
         getSensorsDistanceRM(sensorSampleSize);
         debugSensorDistance();
-      } else if (cc == "C"){
+      } else if (algo_c == "C"){
         // runned when all frontSensors gives -1.
         calibrate();
         delay(explorationDelay);
@@ -198,15 +302,15 @@ void exploration()
 //        delay(explorationDelay);
 //        getSensorsDistanceRM(sensorSampleSize);
 //      } 
-      else if (cc == "B"){
+      else if (algo_c == "B"){
         calibrateLeftDistance();
         delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
-      } else if (cc == "P"){
+      } else if (algo_c == "P"){
         calibrateLeftAngle();
         delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
-      } else if (cc == "Q") {
+      } else if (algo_c == "Q") {
         explorationFlag = false;
       }  
     }
@@ -216,42 +320,42 @@ void exploration()
 void fastestPath(){
   while(fastestPathFlag){
     if(Serial.available() > 0){
-      cc = char(Serial.read());
-      if(cc == "1"){
+      algo_c = char(Serial.read());
+      if(algo_c == "1"){
         goStraightNGrids(1);
-      } else if(cc == "2"){
+      } else if(algo_c == "2"){
         goStraightNGrids(2);
-      } else if(cc == "3"){
+      } else if(algo_c == "3"){
         goStraightNGrids(3);
-      } else if(cc == "4"){
+      } else if(algo_c == "4"){
         goStraightNGrids(4);
-      } else if(cc == "5"){
+      } else if(algo_c == "5"){
         goStraightNGrids(5);
-      } else if(cc == "6"){
+      } else if(algo_c == "6"){
         goStraightNGrids(6);
-      } else if(cc == "7"){
+      } else if(algo_c == "7"){
         goStraightNGrids(7);
-      } else if(cc == "8"){
+      } else if(algo_c == "8"){
         goStraightNGrids(8);
-      } else if(cc == "9"){
+      } else if(algo_c == "9"){
         goStraightNGrids(9);
-      } else if(cc == "A"){
+      } else if(algo_c == "A"){
         goStraightNGrids(10);
-      } else if(cc == "B"){
+      } else if(algo_c == "B"){
         goStraightNGrids(11);
-      } else if(cc == "C"){
+      } else if(algo_c == "C"){
         goStraightNGrids(12);
-      } else if(cc == "D"){
+      } else if(algo_c == "D"){
         goStraightNGrids(13);
-      } else if(cc == "E"){
+      } else if(algo_c == "E"){
         goStraightNGrids(14);
-      } else if(cc == "F"){
+      } else if(algo_c == "F"){
         goStraightNGrids(15);
-      } else if (cc == "R"){
+      } else if (algo_c == "R"){
         turnRightOneGrid();
-      } else if (cc == "L"){
+      } else if (algo_c == "L"){
         turnLeftOneGrid();
-      } else if (cc == "Q") {
+      } else if (algo_c == "Q") {
         fastestPathFlag = false;
       }
     }

@@ -191,7 +191,7 @@ void exploration()
     if (Serial.available() > 0)
     {
       sRead = Serial.readString();
-//      sRead.trim(); // to remove \n
+//      sRead.trim(); // to remove \n, to integrate with algo use explorer-latest
       test_c = sRead.substring(0, 2);
       algo_c = sRead.substring(0, 1);
       sRead = sRead.substring(2);
