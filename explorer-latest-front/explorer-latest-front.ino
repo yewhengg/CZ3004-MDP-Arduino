@@ -39,13 +39,12 @@ int turnDelay = 5;         // Original = 4700
 int calibrationDelay = 10; // Not used
 
 // Sensor Range
-float SRFRONT_1_RANGE[2] = {12.13, 22.10}; // {12.10, 22.50, 24.95}
-//float SRFRONT_2_RANGE[3] = {13.82, 24.51, 36.02}; //{12.80, 21.70, 24.95}
-float SRFRONT_2_RANGE[2] = {12.20, 22.20};               //{12.80, 21.70, 24.95}
-float SRFRONT_3_RANGE[2] = {11.75, 23.10};               //{12.10, 22.52, 30.72}
-float SRLEFT_1_RANGE[2] = {13.00, 23.30};                //{13.63, 20.60, 27.52}
-float SRLEFT_2_RANGE[2] = {12.70, 23.20};                //{13.63, 20.60, 26.45}
-float LRRIGHT_1_RANGE[5] = {12.20, 22.70, 32.80, 44.04, 51.21}; //{13.90, 20.55, 29.54}
+float SRFRONT_1_RANGE[2] = {11.75, 22.10}; // 12.13
+float SRFRONT_2_RANGE[2] = {11.90, 22.20};  // 12.20
+float SRFRONT_3_RANGE[2] = {11.75, 23.10};  
+float SRLEFT_1_RANGE[2] = {13.00, 23.30};            
+float SRLEFT_2_RANGE[2] = {12.70, 23.20};              
+float LRRIGHT_1_RANGE[5] = {12.20, 22.70, 32.80, 44.04, 51.21};
 
 // Initialisation
 DualVNH5019MotorShield md;
