@@ -69,7 +69,17 @@ double previousRPMRight = 0;
 double integralLeft = 0;
 double integralRight = 0;
 double integralDiff = 0;
-double setpoint = 120;
+double setpoint = 120; //120;
+double kpL = 24.7; //20;
+double kiL = 0.48; //0.065;
+double kdL = 3; //4;
+double kpR = 24.7 ;//V=6.4V : 24.7;
+double kiR = 0.2;
+double kdR = 3;
+double kpDiff = 5.0; //V=6.4V : 5.0
+double kiDiff = 0.045; 
+double kdDiff = 10;
+
 // Motor
 int movingSetpoint = 75;
 // Sensor
@@ -89,7 +99,7 @@ float SRFRONT_2_RANGE[3] = {11.90, 22.20, 36.02};               //{12.80, 21.70,
 float SRFRONT_3_RANGE[3] = {11.75, 23.10, 40.75};               //{12.10, 22.52, 30.72}
 float SRLEFT_1_RANGE[3] = {13.00, 23.30, 34.17};                //{13.63, 20.60, 27.52}
 float SRLEFT_2_RANGE[3] = {12.70, 23.20, 32.16};                //{13.63, 20.60, 26.45}
-float LRRIGHT_1_RANGE[5] = {12.20, 22.70, 32.80, 44.04, 51.21}; //{13.90, 20.55, 29.54}
+float LRRIGHT_1_RANGE[5] = {12.20, 22.70, 31.00, 44.04, 51.21}; //{13.90, 20.55, 29.54}
 float srSensorFront1Distance = 0;
 float srSensorFront2Distance = 0;
 float srSensorFront3Distance = 0;
@@ -310,7 +320,7 @@ void exploration()
         calibrateLeftAngle();
         delay(explorationDelay);
         getSensorsDistanceRM(sensorSampleSize);
-      } else if (algo_c == "Q") {
+      } else if (algo_c == "#") {
         explorationFlag = false;
       }  
     }
@@ -320,8 +330,59 @@ void exploration()
 void fastestPath(){
   while(fastestPathFlag){
     if(Serial.available() > 0){
-      algo_c = char(Serial.read());
-      if(algo_c == "1"){
+      sRead = Serial.readString();
+//      sRead.trim(); // to remove \n, 
+// To integrate with algo use explorer-latest-ticks one
+      test_c = sRead.substring(0, 2);
+      algo_c = sRead.substring(0, 1);
+      sRead = sRead.substring(2);
+
+      if (test_c == "20")
+      {
+        forwardTicks = sRead.toInt();
+      }
+      else if (test_c == "21")
+      {
+        leftTurnTicks = sRead.toInt();
+      }
+      
+      else if (test_c == "14")
+      {
+        kpL = sRead.toFloat();
+      }
+      else if (test_c == "15")
+      {
+        kiL = sRead.toFloat();
+      }
+      else if (test_c == "16")
+      {
+        kdL = sRead.toFloat();
+      }
+      else if (test_c == "17")
+      {
+        kpR = sRead.toFloat();
+      }
+      else if (test_c == "18")
+      {
+        kiR = sRead.toFloat();
+      }
+      else if (test_c == "19")
+      {
+        kdR = sRead.toFloat();
+      }
+      else if (test_c == "20")
+      {
+        kpDiff = sRead.toFloat();
+      }
+      else if (test_c == "21")
+      {
+        kiDiff = sRead.toFloat();
+      }
+      else if (test_c == "22")
+      {
+        kdDiff = sRead.toFloat();
+      }
+      else if(algo_c == "1"){
         goStraightNGrids(1);
       } else if(algo_c == "2"){
         goStraightNGrids(2);
@@ -355,9 +416,9 @@ void fastestPath(){
         turnRightOneGrid();
       } else if (algo_c == "L"){
         turnLeftOneGrid();
-      } else if (algo_c == "Q") {
+      } else if (algo_c == "#") {
         fastestPathFlag = false;
-      }
+      } 
     }
   }
 }
@@ -394,22 +455,22 @@ void restartPID()
 
 double computePIDLeft(double RPM, double setpoint)
 {
-  double kp;
-  double ki;
-  double kd;
+//  double kp;
+//  double ki;
+//  double kd;
   double error;
   double p;
   double i;
   double d;
   double pid;
-  kp = 20;
-  ki = 0.065;
-  kd = 4;
+//  kp = 20;
+//  ki = 0.065;
+//  kd = 4;
   error = setpoint - RPM;
   integralLeft = integralLeft + error;
-  p = kp * error;
-  i = ki * integralLeft;
-  d = kd * (previousRPMLeft - RPM);
+  p = kpL * error;
+  i = kiL * integralLeft;
+  d = kdL * (previousRPMLeft - RPM);
   previousRPMLeft = RPM;
   pid = p + i + d;
   return pid;
@@ -417,22 +478,22 @@ double computePIDLeft(double RPM, double setpoint)
 
 double computePIDRight(double RPM, double setpoint)
 {
-  double kp;
-  double ki;
-  double kd;
+//  double kp;
+//  double ki;
+//  double kd;
   double error;
   double p;
   double i;
   double d;
   double pid;
-  kp = 24.7; // 25
-  ki = 0.2;
-  kd = 3;
+//  kpR = 24.7; // 25
+//  kiR = 0.2;
+//  kdR = 3;
   error = setpoint - RPM;
   integralRight = integralRight + error;
-  p = kp * error;
-  i = ki * integralRight;
-  d = kd * (previousRPMRight - RPM);
+  p = kpR * error;
+  i = kiR * integralRight;
+  d = kdR * (previousRPMRight - RPM);
   previousRPMRight = RPM;
   pid = p + i + d;
   return pid;
@@ -440,28 +501,28 @@ double computePIDRight(double RPM, double setpoint)
 
 double computePIDDiff()
 {
-  double kp;
-  double ki;
-  double kd;
+//  double kp;
+//  double ki;
+//  double kd;
   double error;
   double p;
   double i;
   double d;
   double pid;
   double timeChange;
-  kp = 9.8; // 10
-  ki = 0.1;
-  kd = 10;
+//  kpDiff = 9.8; // 10
+//  kiDiff = 0.1;
+//  kdDiff = 10;
   timeChange = (leftTicks - previousLeftTicks) * 1.5;
   error = leftTicks - rightTicks;
   error = error + (error * timeChange);
   integralDiff += error;
-  p = kp * error;
-  i = ki * integralDiff;
+  p = kpDiff * error;
+  i = kiDiff * integralDiff;
   if (timeChange == 0) {
     d = 0;
   } else {
-    d = (kd * (previousLeftTicks - leftTicks)) / timeChange;
+    d = (kdDiff * (previousLeftTicks - leftTicks)) / timeChange;
   }
   previousLeftTicks = leftTicks;
   pid = p + i + d;
