@@ -25,7 +25,7 @@ unsigned int turnSpeed = 250;
 float soffset = 8.10;
 
 // Auto-Cali Parameters
-float LEFT_ANGLE_OFFSET = 0.0;       // error within this value not trigger calibration
+float LEFT_ANGLE_OFFSET = -0.9;       // error within this value not trigger calibration
 float LEFT_DIS_OFFSET = 0.0; 
 // float MIN_DISTANCE_CALIBRATE = 12;             // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 1.0;       // error within this value not trigger calibration 
@@ -527,10 +527,10 @@ void calibrateAngle(float offset)
 
 void calibrateDistance(float offset)
 {
+  frontSensor2ToWall = 0;
+  float error;
   while (1)
   {
-    frontSensor2ToWall = 0;
-    float error;
     //Original
     frontSensor2ToWall = SRSensorFront2.distance();
     error = 3.5 - frontSensor2ToWall;
