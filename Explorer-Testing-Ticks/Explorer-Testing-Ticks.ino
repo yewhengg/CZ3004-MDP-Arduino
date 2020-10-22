@@ -61,11 +61,11 @@ double kpL = 24.7; //20;
 double kiL = 0.48; //0.065;
 double kdL = 3; //4;
 double kpR = 24.7 ;//V=6.4V : 24.7;
-double kiR = 0.2;
+double kiR = 0.48;
 double kdR = 3;
-double kpDiff = 5.0; //V=6.4V : 5.0
-double kiDiff = 0.044; //0.045
-double kdDiff = 10;
+double kpDiff = 0.0; //V=6.4V : 5.0
+double kiDiff = 0.0; //0.045
+double kdDiff = 0.0;
 
 // Parameters Declaration
 // Interrupt + PID
@@ -84,6 +84,8 @@ double setpoint = 120;
 // Motor
 int movingSetpoint = 75;
 float soffset = 8.10;
+int LEFT_BRAKE = 280;
+int RIGHT_BRAKE = 320;
 
 // Sensor
 int counter = 0;
@@ -294,14 +296,26 @@ void exploration()
       {
         SRFRONT_3_RANGE[1] = sRead.toFloat();
       }
-//      else if (test_c == "35")
-//      {
-//       SRFRONT_3_RANGE[1] = sRead.toFloat();
-//      }
-//            else if (test_c == "35")
-//      {
-//        SRFRONT_3_RANGE[1] = sRead.toFloat();
-//      }
+      else if (test_c == "36")
+      {
+       LEFT_BRAKE = sRead.toInt();
+      }
+            else if (test_c == "37")
+      {
+        RIGHT_BRAKE = sRead.toInt();
+      }
+                  else if (test_c == "38")
+      {
+        kpDiff = sRead.toDouble();
+      }
+                  else if (test_c == "39")
+      {
+        kiDiff = sRead.toDouble();
+      }
+                  else if (test_c == "40")
+      {
+        kdDiff = sRead.toDouble();
+      }
       if (algo_c == "U") {
         goStraightNGrids(1);
         delay(explorationDelay);
@@ -542,7 +556,7 @@ void goStraightNGrids(int numGrids)
     durationRight = 2 * pulseIn(motorEncoderRight1, HIGH);
     RPMRight = 60 / (562.25 * durationRight * 0.000001);
   }
-  md.setBrakes(400, 390);
+  md.setBrakes(RIGHT_BRAKE, LEFT_BRAKE);
 }
 
 void turnLeftOneGrid()

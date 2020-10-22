@@ -43,13 +43,15 @@ SharpIR SRSensorLeft1(srSensorLeft1, SRSensor_Model, 5285.29, -14.8405,8.24699 )
 SharpIR SRSensorLeft2(srSensorLeft2, SRSensor_Model, 5440.65, -2.86093, 7.79677 );
 SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 94637.7, 541.154, 83.5766); 
 
+
 // Auto-Cali Parameters
-float MIN_DISTANCE_LEFT_CALIBRATE = 3.3;       // distance away from left wall to run left cali
+float MIN_DISTANCE_LEFT_CALIBRATE = 8.3;       // distance away from left wall to run left cali
 float MIN_DISTANCE_CALIBRATE = 12;             // distance away from obstacle to trigger calibration
 float ANGLE_CALIBRATION_THRESHOLD = 0.25; //1.0;       // error within this value not trigger calibration
-float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.05; // error within this value not trigger calibration
+float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.08; // error within this value not trigger calibration
 float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = { 4.0 , 4.5};  // distance away from obstacle after cali
 float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {2.8, 4.5}; //{2.5/2, 3.5/2};
+int leftCount =  35;
 
 //Robot Movement
 unsigned int forwardTicks = 272; //273; //285;
@@ -61,11 +63,11 @@ double kpL = 24.7; //20;
 double kiL = 0.48; //0.065;
 double kdL = 3; //4;
 double kpR = 24.7 ;//V=6.4V : 24.7;
-double kiR = 0.2;
+double kiR = 0.48;
 double kdR = 3;
-double kpDiff = 5.0; //V=6.4V : 5.0
-double kiDiff = 0.044; //0.045
-double kdDiff = 10;
+double kpDiff = 0.0; //V=6.4V : 5.0
+double kiDiff = 0.0; //0.045
+double kdDiff = 0.0;
 
 // Parameters Declaration
 // Interrupt + PID
@@ -84,6 +86,8 @@ double setpoint = 120;
 // Motor
 int movingSetpoint = 75;
 float soffset = 8.10;
+int LEFT_BRAKE = 300;
+int RIGHT_BRAKE = 320;
 
 // Sensor
 int counter = 0;
@@ -96,12 +100,12 @@ RunningMedian srSensorLeft1DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorLeft2DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian lrSensorRight1DistanceRM = RunningMedian(sensorSampleSize);
 // Sensor Range
-float SRFRONT_1_RANGE[3] = {11.10, 21.10, 37.55}; // {11.10, 22.10, 37.55}; 
-float SRFRONT_2_RANGE[3] = {11.10, 20.90, 36.02};               //{11.10, 22.20, 36.02}; 
-float SRFRONT_3_RANGE[3] = {10.60, 20.60, 40.75};               //{11.10, 23.10, 40.75};
-float SRLEFT_1_RANGE[3] = {12.30, 23.30, 34.17};                //{13.63, 20.60, 27.52}
-float SRLEFT_2_RANGE[3] = {12.30, 23.20, 32.16};                //{13.63, 20.60, 26.45}
-float LRRIGHT_1_RANGE[5] = {12.20, 22.70, 31.00, 44.04, 51.21}; //{13.90, 20.55, 29.54}
+float SRFRONT_1_RANGE[3] = {11.10, 19.82, 37.55}; // {11.10, 22.10, 37.55}; 
+float SRFRONT_2_RANGE[3] = {11.50, 20.90, 36.02};               //{11.10, 22.20, 36.02}; 
+float SRFRONT_3_RANGE[3] = {10.60, 20.20, 40.75};               //{11.10, 23.10, 40.75};
+float SRLEFT_1_RANGE[3] = {11.52, 22.30, 34.17};                //{13.63, 20.60, 27.52}
+float SRLEFT_2_RANGE[3] = {11.70, 23.20, 32.16};                //{13.63, 20.60, 26.45}
+float LRRIGHT_1_RANGE[5] = {12.52, 22.70, 31.00, 44.04, 51.21}; //{13.90, 20.55, 29.54}
 float srSensorFront1Distance = 0;
 float srSensorFront2Distance = 0;
 float srSensorFront3Distance = 0;
@@ -427,7 +431,7 @@ void goStraightNGrids(int numGrids)
     durationRight = 2 * pulseIn(motorEncoderRight1, HIGH);
     RPMRight = 60 / (562.25 * durationRight * 0.000001);
   }
-  md.setBrakes(400, 380);
+  md.setBrakes(RIGHT_BRAKE, LEFT_BRAKE);
 }
 
 void turnLeftOneGrid()
@@ -458,7 +462,7 @@ void turnLeftOneGrid()
     durationRight = 2 * pulseIn(motorEncoderRight1, HIGH);
     RPMRight = 60 / (562.25 * durationRight * 0.000001);
   }
-  md.setBrakes(400, 360);
+  md.setBrakes(400, 400);
 }
 
 void turnRightOneGrid()
@@ -489,7 +493,7 @@ void turnRightOneGrid()
     durationRight = 2 * pulseIn(motorEncoderRight1, HIGH);
     RPMRight = 60 / (562.25 * durationRight * 0.000001);
   }
-  md.setBrakes(400, 360); //(400,400);
+  md.setBrakes(400, 400); //(400,400);
 }
 
 // ==================== Sensors ====================
@@ -648,15 +652,15 @@ void getSensorsDistanceRM(int n)
 
 void calibrate()
 {
-//  frontSensor2ToWall = SRSensorFront2.distance(); //getDistance(2);
-  frontSensor1ToWall = SRSensorFront1.distance();
-  frontSensor3ToWall = SRSensorFront3.distance();
-  
+  float frontSensor2ToWall = SRSensorFront2.distance(); //getDistance(2);
   // frontSensor2ToWall should be slightly smaller than the SRFRONT_2_RANGE[1]
-  if (frontSensor1ToWall <= SRFRONT_1_RANGE[1] - 1 && frontSensor3ToWall <= SRFRONT_3_RANGE[1] - 1 )
-    calibrateFrontAngle();
-
-  checkCaliFrontDistance();
+  if (frontSensor2ToWall > SRFRONT_2_RANGE[1] - 1)
+    return;
+  delay(calibrationDelay);
+  calibrateFrontAngle();
+  delay(calibrationDelay);
+  calibrateFrontDistance(0);
+  delay(calibrationDelay);
   calibrateFrontAngle();
 }
 
@@ -734,7 +738,7 @@ void calibrateLeftSensorsAngle(float error)
     //    md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
     md.setSpeeds(100, -100);
     delay(abs(error * 25));
-    md.setBrakes(400, 360);
+    md.setBrakes(400, 400);
   }
   else if (error < -LEFT_ANGLE_CALIBRATION_THRESHOLD)
   {
@@ -742,7 +746,7 @@ void calibrateLeftSensorsAngle(float error)
     //    md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
     md.setSpeeds(-100, 100);
     delay(abs(error * 25));
-    md.setBrakes(400, 360);
+    md.setBrakes(400, 400);
   }
 }
 void calibrateLeftAngle()
@@ -757,7 +761,7 @@ void calibrateLeftAngle()
   int counter = 0;
   float calibrationAngleError = 0;
   double angleDist = 0;
-  while (counter < 15)
+  while (counter < leftCount)
   {
     leftSensor1ToWall = SRSensorLeft1.distance();
     leftSensor2ToWall = SRSensorLeft2.distance();
