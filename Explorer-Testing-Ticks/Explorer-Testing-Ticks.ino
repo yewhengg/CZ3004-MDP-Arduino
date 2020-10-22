@@ -46,15 +46,26 @@ SharpIR LRSensorRight1(lrSensorRight1, LRSensor_Model, 94637.7, 541.154, 83.5766
 // Auto-Cali Parameters
 float MIN_DISTANCE_LEFT_CALIBRATE = 3.3;       // distance away from left wall to run left cali
 float MIN_DISTANCE_CALIBRATE = 12;             // distance away from obstacle to trigger calibration
-float ANGLE_CALIBRATION_THRESHOLD = 1.0;       // error within this value not trigger calibration
-float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.10; // error within this value not trigger calibration
-float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = { 6.5 / 2, 7.5 / 2};  // distance away from obstacle after cali
+float ANGLE_CALIBRATION_THRESHOLD = 0.25; //1.0;       // error within this value not trigger calibration
+float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.05; // error within this value not trigger calibration
+float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = { 4.0 , 4.5};  // distance away from obstacle after cali
 float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {2.8, 4.5}; //{2.5/2, 3.5/2};
 
 //Robot Movement
-unsigned int forwardTicks = 285;
-unsigned int leftTurnTicks = 390;
-unsigned int rightTurnTicks = 390;
+unsigned int forwardTicks = 272; //273; //285;
+unsigned int leftTurnTicks = 383;// 387 - 6.3V 383 - 6.4V
+unsigned int rightTurnTicks = 385; //385;//387 - 6.3V 385 - 6.4V
+
+//pid
+double kpL = 24.7; //20;
+double kiL = 0.48; //0.065;
+double kdL = 3; //4;
+double kpR = 24.7 ;//V=6.4V : 24.7;
+double kiR = 0.2;
+double kdR = 3;
+double kpDiff = 5.0; //V=6.4V : 5.0
+double kiDiff = 0.044; //0.045
+double kdDiff = 10;
 
 // Parameters Declaration
 // Interrupt + PID
@@ -69,19 +80,11 @@ double previousRPMRight = 0;
 double integralLeft = 0;
 double integralRight = 0;
 double integralDiff = 0;
-double setpoint = 120; //120;
-double kpL = 24.7; //20;
-double kiL = 0.48; //0.065;
-double kdL = 3; //4;
-double kpR = 24.7 ;//V=6.4V : 24.7;
-double kiR = 0.2;
-double kdR = 3;
-double kpDiff = 5.0; //V=6.4V : 5.0
-double kiDiff = 0.045; 
-double kdDiff = 10;
-
+double setpoint = 120;
 // Motor
 int movingSetpoint = 75;
+float soffset = 8.10;
+
 // Sensor
 int counter = 0;
 String sensorOutput = "";
@@ -93,13 +96,12 @@ RunningMedian srSensorLeft1DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorLeft2DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian lrSensorRight1DistanceRM = RunningMedian(sensorSampleSize);
 // Sensor Range
-float SRFRONT_1_RANGE[3] = {11.75, 22.10, 37.55}; // {12.10, 22.50, 24.95}
-//float SRFRONT_2_RANGE[3] = {13.82, 24.51, 36.02}; //{12.80, 21.70, 24.95}
-float SRFRONT_2_RANGE[3] = {11.90, 22.20, 36.02};               //{12.80, 21.70, 24.95}
-float SRFRONT_3_RANGE[3] = {11.75, 23.10, 40.75};               //{12.10, 22.52, 30.72}
-float SRLEFT_1_RANGE[3] = {13.00, 23.30, 34.17};                //{13.63, 20.60, 27.52}
-float SRLEFT_2_RANGE[3] = {12.70, 23.20, 32.16};                //{13.63, 20.60, 26.45}
-float LRRIGHT_1_RANGE[5] = {12.20, 22.70, 31.00, 44.04, 51.21}; //{13.90, 20.55, 29.54}
+float SRFRONT_1_RANGE[3] = {11.10, 19.82, 37.55}; // {11.10, 22.10, 37.55}; 
+float SRFRONT_2_RANGE[3] = {11.50, 20.90, 36.02};               //{11.10, 22.20, 36.02}; 
+float SRFRONT_3_RANGE[3] = {10.60, 20.20, 40.75};               //{11.10, 23.10, 40.75};
+float SRLEFT_1_RANGE[3] = {11.52, 22.30, 34.17};                //{13.63, 20.60, 27.52}
+float SRLEFT_2_RANGE[3] = {11.70, 23.20, 32.16};                //{13.63, 20.60, 26.45}
+float LRRIGHT_1_RANGE[5] = {12.52, 22.70, 31.00, 44.04, 51.21}; //{13.90, 20.55, 29.54}
 float srSensorFront1Distance = 0;
 float srSensorFront2Distance = 0;
 float srSensorFront3Distance = 0;
@@ -120,9 +122,12 @@ float frontSensor3ToWall = 0;
 float leftSensor1ToWall = 0;
 float leftSensor2ToWall = 0;
 float calibrationAngleError = 0;
+double newFrontAngleThreshold[2] = {0.55, 0.80};
+double newFrontSensor1AngleThreshold[2] = {4.22, 4.32};
+double newFrontSensor3AngleThreshold[2] = {3.13, 3.23};
 
 // Others
-//String cc = "";
+String cc = "";
 String sRead = "";
 String algo_c = "";
 String test_c = "";
@@ -161,11 +166,11 @@ void loop()
   //goStraightNGrids(1);
   //delay(100);
   if (Serial.available() > 0) {
-    sRead = char(Serial.read());
-    if (sRead == "E") {
+    cc = char(Serial.read());
+    if (cc == "E") {
       explorationFlag = true;
       exploration();
-    } else if (sRead == "F") {
+    } else if (cc == "F") {
       fastestPathFlag = true;
       fastestPath();
     }
@@ -185,6 +190,11 @@ void exploration()
       test_c = sRead.substring(0, 2);
       algo_c = sRead.substring(0, 1);
       sRead = sRead.substring(2);
+      Serial.println(test_c);
+      Serial.println("|");
+      Serial.println(algo_c);
+      Serial.println("|");
+      Serial.println(sRead);
       if (test_c == "11")
       {
         MIN_DISTANCE_CALIBRATE = sRead.toFloat();
@@ -282,8 +292,16 @@ void exploration()
       }
       else if (test_c == "35")
       {
-        SRFRONT_3_RANGE[1] = sRead.toInt();
+        SRFRONT_3_RANGE[1] = sRead.toFloat();
       }
+//      else if (test_c == "35")
+//      {
+//       SRFRONT_3_RANGE[1] = sRead.toFloat();
+//      }
+//            else if (test_c == "35")
+//      {
+//        SRFRONT_3_RANGE[1] = sRead.toFloat();
+//      }
       if (algo_c == "U") {
         goStraightNGrids(1);
         delay(explorationDelay);
@@ -327,98 +345,49 @@ void exploration()
   }
 }
 
+
+
 void fastestPath(){
   while(fastestPathFlag){
     if(Serial.available() > 0){
-      sRead = Serial.readString();
-//      sRead.trim(); // to remove \n, 
-// To integrate with algo use explorer-latest-ticks one
-      test_c = sRead.substring(0, 2);
-      algo_c = sRead.substring(0, 1);
-      sRead = sRead.substring(2);
-
-      if (test_c == "20")
-      {
-        forwardTicks = sRead.toInt();
-      }
-      else if (test_c == "21")
-      {
-        leftTurnTicks = sRead.toInt();
-      }
-      
-      else if (test_c == "14")
-      {
-        kpL = sRead.toFloat();
-      }
-      else if (test_c == "15")
-      {
-        kiL = sRead.toFloat();
-      }
-      else if (test_c == "16")
-      {
-        kdL = sRead.toFloat();
-      }
-      else if (test_c == "17")
-      {
-        kpR = sRead.toFloat();
-      }
-      else if (test_c == "18")
-      {
-        kiR = sRead.toFloat();
-      }
-      else if (test_c == "19")
-      {
-        kdR = sRead.toFloat();
-      }
-      else if (test_c == "20")
-      {
-        kpDiff = sRead.toFloat();
-      }
-      else if (test_c == "21")
-      {
-        kiDiff = sRead.toFloat();
-      }
-      else if (test_c == "22")
-      {
-        kdDiff = sRead.toFloat();
-      }
-      else if(algo_c == "1"){
+      cc = char(Serial.read());
+      if(cc == "1"){
         goStraightNGrids(1);
-      } else if(algo_c == "2"){
+      } else if(cc == "2"){
         goStraightNGrids(2);
-      } else if(algo_c == "3"){
+      } else if(cc == "3"){
         goStraightNGrids(3);
-      } else if(algo_c == "4"){
+      } else if(cc == "4"){
         goStraightNGrids(4);
-      } else if(algo_c == "5"){
+      } else if(cc == "5"){
         goStraightNGrids(5);
-      } else if(algo_c == "6"){
+      } else if(cc == "6"){
         goStraightNGrids(6);
-      } else if(algo_c == "7"){
+      } else if(cc == "7"){
         goStraightNGrids(7);
-      } else if(algo_c == "8"){
+      } else if(cc == "8"){
         goStraightNGrids(8);
-      } else if(algo_c == "9"){
+      } else if(cc == "9"){
         goStraightNGrids(9);
-      } else if(algo_c == "A"){
+      } else if(cc == "A"){
         goStraightNGrids(10);
-      } else if(algo_c == "B"){
+      } else if(cc == "B"){
         goStraightNGrids(11);
-      } else if(algo_c == "C"){
+      } else if(cc == "C"){
         goStraightNGrids(12);
-      } else if(algo_c == "D"){
+      } else if(cc == "D"){
         goStraightNGrids(13);
-      } else if(algo_c == "E"){
+      } else if(cc == "E"){
         goStraightNGrids(14);
-      } else if(algo_c == "F"){
+      } else if(cc == "F"){
         goStraightNGrids(15);
-      } else if (algo_c == "R"){
+      } else if (cc == "R"){
         turnRightOneGrid();
-      } else if (algo_c == "L"){
+      } else if (cc == "L"){
         turnLeftOneGrid();
-      } else if (algo_c == "#") {
+      } else if (cc == "#") {
         fastestPathFlag = false;
-      } 
+      }
     }
   }
 }
@@ -486,9 +455,9 @@ double computePIDRight(double RPM, double setpoint)
   double i;
   double d;
   double pid;
-//  kpR = 24.7; // 25
-//  kiR = 0.2;
-//  kdR = 3;
+//  kp = 24.7; // 25
+//  ki = 0.2;
+//  kd = 3;
   error = setpoint - RPM;
   integralRight = integralRight + error;
   p = kpR * error;
@@ -510,9 +479,9 @@ double computePIDDiff()
   double d;
   double pid;
   double timeChange;
-//  kpDiff = 9.8; // 10
-//  kiDiff = 0.1;
-//  kdDiff = 10;
+//  kp = 9.8; // 10
+//  ki = 0.1;
+//  kd = 10;
   timeChange = (leftTicks - previousLeftTicks) * 1.5;
   error = leftTicks - rightTicks;
   error = error + (error * timeChange);
@@ -567,12 +536,13 @@ void goStraightNGrids(int numGrids)
     }
     PIDOutputDiff = computePIDDiff();
     md.setSpeeds((PIDOutputRight + PIDOutputDiff), (PIDOutputLeft - PIDOutputDiff));
+//    md.setSpeeds(320,320 + soffset);
     durationLeft = 2 * pulseIn(motorEncoderLeft1, HIGH);
     RPMLeft = 60 / (562.25 * durationLeft * 0.000001);
     durationRight = 2 * pulseIn(motorEncoderRight1, HIGH);
     RPMRight = 60 / (562.25 * durationRight * 0.000001);
   }
-  md.setBrakes(400, 400);
+  md.setBrakes(400, 390);
 }
 
 void turnLeftOneGrid()
@@ -597,12 +567,13 @@ void turnLeftOneGrid()
     PIDOutputRight = computePIDRight(RPMRight, setpoint);
     PIDOutputDiff = computePIDDiff();
     md.setSpeeds((PIDOutputRight + PIDOutputDiff), -1 * (PIDOutputLeft - PIDOutputDiff));
+//    md.setSpeeds(320 , -320);
     durationLeft = 2 * pulseIn(motorEncoderLeft1, HIGH);
     RPMLeft = 60 / (562.25 * durationLeft * 0.000001);
     durationRight = 2 * pulseIn(motorEncoderRight1, HIGH);
     RPMRight = 60 / (562.25 * durationRight * 0.000001);
   }
-  md.setBrakes(400, 400);
+  md.setBrakes(400, 360);
 }
 
 void turnRightOneGrid()
@@ -627,12 +598,13 @@ void turnRightOneGrid()
     PIDOutputRight = computePIDRight(RPMRight, setpoint);
     PIDOutputDiff = computePIDDiff();
     md.setSpeeds(-1 * (PIDOutputRight + PIDOutputDiff), (PIDOutputLeft - PIDOutputDiff));
+//    md.setSpeeds(-320, 320);
     durationLeft = 2 * pulseIn(motorEncoderLeft1, HIGH);
     RPMLeft = 60 / (562.25 * durationLeft * 0.000001);
     durationRight = 2 * pulseIn(motorEncoderRight1, HIGH);
     RPMRight = 60 / (562.25 * durationRight * 0.000001);
   }
-  md.setBrakes(400, 400);
+  md.setBrakes(400, 360); //(400,400);
 }
 
 // ==================== Sensors ====================
@@ -803,60 +775,69 @@ void calibrate()
   calibrateFrontAngle();
 }
 
-void calibrateFrontDistance(float offset)
+void checkCaliFrontDistance(){
+  frontSensor2ToWall = SRSensorFront2.distance(); //getDistance(2);
+  frontSensor1ToWall = SRSensorFront1.distance();
+  frontSensor3ToWall = SRSensorFront3.distance();
+  
+  if (frontSensor2ToWall <= SRFRONT_2_RANGE[0] - 1.0){
+    calibrateFrontDistance(2);
+    delay(calibrationDelay);
+  } else if(frontSensor1ToWall <= SRFRONT_1_RANGE[0] - 1.0) {
+    calibrateFrontDistance(1);
+    delay(calibrationDelay);
+  } else if(frontSensor3ToWall <= SRFRONT_3_RANGE[0] - 1.0) {
+    calibrateFrontDistance(3);
+    delay(calibrationDelay);
+  }
+  return;
+}
+
+void calibrateFrontDistance(int sensor)
 {
   frontSensor2ToWall = 0;
+  float dist;
+  float range[2];
   float error;
   while (1)
   {
+    if(sensor == 2){
+      dist = SRSensorFront2.distance();
+      
+    } else if(sensor == 1){
+      dist = SRSensorFront1.distance();
+      
+    } else {
+      dist = SRSensorFront3.distance();
+      
+    }
     //Original
-    frontSensor2ToWall = SRSensorFront2.distance();
-    error = 3.5 - frontSensor2ToWall;
+//    frontSensor1ToWall = SRSensorFront1.distance();
+//    frontSensor2ToWall = SRSensorFront2.distance();
+//    frontSensor3ToWall = SRSensorFront3.distance();
+    error = FRONT_SENSORS_DISTANCE_THRESHOLD[0] - dist;
     
     //abort if within margin of error
-    if (frontSensor2ToWall >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && frontSensor2ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[1])
+    if (dist >= FRONT_SENSORS_DISTANCE_THRESHOLD[0] && dist < FRONT_SENSORS_DISTANCE_THRESHOLD[1]){
+      
       break;
+    }
 
-    if (frontSensor2ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0])
+    if (dist < FRONT_SENSORS_DISTANCE_THRESHOLD[0])
     {
-      //reverse normally
-      //      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 30);
-      //      md.setSpeeds(PIDOutputRightME * -100, PIDOutputLeftME * -100);
+      //move back
       md.setSpeeds(-100, -100);
       delay(abs(error) * 50); //100
       md.setBrakes(400, 400);
     }
 
-    else if (frontSensor2ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1])
+    else if (dist > FRONT_SENSORS_DISTANCE_THRESHOLD[1])
     {
       //move forward
-      // Serial.println("Moving forwards");
-      //      PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, 30);
-      //      md.setSpeeds(PIDOutputRightME * 100, PIDOutputLeftME * 100);
       md.setSpeeds(100, 100);
       delay(abs(error) * 50); //100
       md.setBrakes(400, 400);
     }
-  }
-}
-
-void calibrateFrontSensorsAngle(float error)
-{
-  if (error > ANGLE_CALIBRATION_THRESHOLD)
-  {
-    //    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-    //    md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
-    md.setSpeeds(100, -100);
-    delay(abs(error) * 25);
-    md.setBrakes(400, 400);
-  }
-  else if (error < -ANGLE_CALIBRATION_THRESHOLD)
-  {
-    //    PIDCalculation(kpLeftME, kiLeftME, kdLeftME, kpRightME, kiRightME, kdRightME, setpoint);
-    //    md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
-    md.setSpeeds(-100, 100);
-    delay(abs(error) * 25);
-    md.setBrakes(400, 400);
   }
 }
 
@@ -868,7 +849,7 @@ void calibrateLeftSensorsAngle(float error)
     //    md.setSpeeds(PIDOutputRightME * 50, -PIDOutputLeftME * 50);
     md.setSpeeds(100, -100);
     delay(abs(error * 25));
-    md.setBrakes(400, 400);
+    md.setBrakes(400, 360);
   }
   else if (error < -LEFT_ANGLE_CALIBRATION_THRESHOLD)
   {
@@ -876,7 +857,7 @@ void calibrateLeftSensorsAngle(float error)
     //    md.setSpeeds(-PIDOutputRightME * 50, PIDOutputLeftME * 50);
     md.setSpeeds(-100, 100);
     delay(abs(error * 25));
-    md.setBrakes(400, 400);
+    md.setBrakes(400, 360);
   }
 }
 void calibrateLeftAngle()
@@ -904,27 +885,88 @@ void calibrateLeftAngle()
     calibrateLeftSensorsAngle(calibrationAngleError);
   }
 }
+//void calibrateLeftAngle()
+//{
+//  double leftSensor1ToWall = SRSensorLeft1.distance();
+//  double leftSensor2ToWall = SRSensorLeft2.distance();
+//  double calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+//  if (calibrationAngleError > LEFT_ANGLE_CALIBRATION_THRESHOLD) {
+//    md.setSpeeds(50, -50);
+//    while (calibrationAngleError > LEFT_ANGLE_CALIBRATION_THRESHOLD) {
+//      leftSensor1ToWall = SRSensorLeft1.distance();
+//      leftSensor2ToWall = SRSensorLeft2.distance();
+//      Serial.println(leftSensor1ToWall);
+//      Serial.println(leftSensor2ToWall);
+//      calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+//      if (abs(calibrationAngleError) <= LEFT_ANGLE_CALIBRATION_THRESHOLD) {
+//        md.setBrakes(400, 400);
+//      }
+//    }
+//  } else if (calibrationAngleError < -LEFT_ANGLE_CALIBRATION_THRESHOLD) {
+//    md.setSpeeds(-50, 50);
+//    while (calibrationAngleError < -LEFT_ANGLE_CALIBRATION_THRESHOLD) {
+//      leftSensor1ToWall = SRSensorLeft1.distance();
+//      leftSensor2ToWall = SRSensorLeft2.distance();
+//      Serial.println(leftSensor1ToWall);
+//      Serial.println(leftSensor2ToWall);
+//      calibrationAngleError = leftSensor1ToWall - leftSensor2ToWall;
+//      if (abs(calibrationAngleError) <= LEFT_ANGLE_CALIBRATION_THRESHOLD) {
+//        md.setBrakes(400, 400);
+//      }
+//    }
+//  }
+//}
 void calibrateFrontAngle()
 {
-  int counter = 0;
-  frontSensor1ToWall = 0;
-  frontSensor3ToWall = 0;
-  float calibrationAngleError = 0;
-  double angleDist = 0;
-  while (counter < 15)
-  {
-    frontSensor1ToWall = SRSensorFront1.distance();
-    frontSensor3ToWall = SRSensorFront3.distance();
-    calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
-    counter++;
-    if (abs(calibrationAngleError) <= ANGLE_CALIBRATION_THRESHOLD)
-    {
-      break;
+  double frontSensor1ToWall = SRSensorFront1.distance();
+  double frontSensor2ToWall = SRSensorFront2.distance();
+  double calibrationAngleError = frontSensor1ToWall - frontSensor2ToWall;
+  if (calibrationAngleError > ANGLE_CALIBRATION_THRESHOLD) {
+    md.setSpeeds(80, -80);
+    while (calibrationAngleError > ANGLE_CALIBRATION_THRESHOLD) {
+      frontSensor1ToWall = SRSensorFront1.distance();
+      frontSensor2ToWall = SRSensorFront2.distance();
+      calibrationAngleError = frontSensor1ToWall - frontSensor2ToWall;
+      if (abs(calibrationAngleError) <= ANGLE_CALIBRATION_THRESHOLD) {
+        md.setBrakes(400, 400);
+      }
     }
-    calibrateFrontSensorsAngle(calibrationAngleError);
-    md.setBrakes(400, 400);
+  } else if (calibrationAngleError < -ANGLE_CALIBRATION_THRESHOLD) {
+    md.setSpeeds(-80, 80);
+    while (calibrationAngleError < -ANGLE_CALIBRATION_THRESHOLD) {
+      frontSensor1ToWall = SRSensorFront1.distance();
+      frontSensor2ToWall = SRSensorFront2.distance();
+      calibrationAngleError = frontSensor1ToWall - frontSensor2ToWall;
+      if (abs(calibrationAngleError) <= ANGLE_CALIBRATION_THRESHOLD) {
+        md.setBrakes(400, 400);
+      }
+    }
   }
 }
+//void calibrateFrontAngle()
+//{
+//  int counter = 0;
+//  frontSensor1ToWall = 0;
+//  frontSensor3ToWall = 0;
+//  float calibrationAngleError = 0;
+//  double angleDist = 0;
+//  while (counter < 50)
+//  {
+//    frontSensor1ToWall = SRSensorFront1.distance();
+//    frontSensor3ToWall = SRSensorFront3.distance();
+//    calibrationAngleError = frontSensor1ToWall - frontSensor3ToWall;
+//    
+//    counter++;
+////    if (frontSensor1ToWall >= newFrontSensor1AngleThreshold[0] && frontSensor1ToWall <= newFrontSensor1AngleThreshold[1] && frontSensor3ToWall >= newFrontSensor3AngleThreshold[0] && frontSensor3ToWall <= newFrontSensor3AngleThreshold[1])
+////    if (abs(calibrationAngleError) >= newFrontAngleThreshold[0] && abs(calibrationAngleError) <= newFrontAngleThreshold[1])
+//    if (abs(calibrationAngleError) < ANGLE_CALIBRATION_THRESHOLD)
+//    {
+//      break;
+//    }
+//    calibrateFrontSensorsAngle(calibrationAngleError);
+//    md.setBrakes(400, 400);
+//  }
+//}
 
 void calibrateLeftDistance()
 {
@@ -937,13 +979,17 @@ void calibrateLeftDistance()
   // Serial.println(leftSensor1ToWall);
   // Serial.println(leftSensor2ToWall);
   float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
-  if (leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE && leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE)
+//  if (leftSensor1ToWall > SRLEFT_1_RANGE[0] || leftSensor2ToWall > SRLEFT_2_RANGE[0]) {
+//    return;
+//  }
+//  calibrateLeftAngle();
+  if (leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE && leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE )
   {
     return;
   }
-    Serial.println("Running before calibrateLeftAngle");
-    calibrateLeftAngle();
-    Serial.println("Running after calibrateLeftAngle");
+//    Serial.println("Running before calibrateLeftAngle");
+//    calibrateLeftAngle();
+    
     //abort if within margin of error
     if ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]))
     {
@@ -955,8 +1001,7 @@ void calibrateLeftDistance()
       calibrate();
       delay(calibrationDelay);
       turnRightOneGrid();
-      delay(calibrationDelay);
-      calibrateLeftAngle();
+      
 }
 
 // ==================== Debug ====================
