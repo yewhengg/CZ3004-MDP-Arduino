@@ -18,8 +18,8 @@
 
 // Robot Movement
 unsigned int oneGridDistance = 2900;
-unsigned int turnGridDistance = 16000;  //ori=14600
-unsigned int turnRightDistance = 16100; //ori=14600
+unsigned int turnGridDistance = 15700;  //ori=14600
+unsigned int turnRightDistance = 15700; //ori=14600
 unsigned int moveSpeed = 300;
 unsigned int turnSpeed = 250;
 float soffset = 8.10;
@@ -27,15 +27,16 @@ float soffset = 8.10;
 // Auto-Cali Parameters
 float LEFT_ANGLE_OFFSET = -0.7;       // error within this value not trigger calibration
 float LEFT_DIS_OFFSET = 0.0; 
-// float MIN_DISTANCE_CALIBRATE = 12;             // distance away from obstacle to trigger calibration
-float ANGLE_CALIBRATION_THRESHOLD = 1.0;       // error within this value not trigger calibration 
+ float MIN_DISTANCE_CALIBRATE = 12;             // distance away from obstacle to trigger calibration
+float ANGLE_CALIBRATION_THRESHOLD = 0.8; 
+float MIN_DISTANCE_LEFT_CALIBRATE = 8.3;// error within this value not trigger calibration 
 // float LEFT_ANGLE_CALIBRATION_THRESHOLD = 0.10; // error within this value not trigger calibration
 float FRONT_SENSORS_DISTANCE_THRESHOLD[2] = { 6.0 / 2, 7.0 / 2};  // distance away from obstacle after cali
-// float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {1.0, 3.0}; //{2.5/2, 3.5/2};
+ float LEFT_SENSORS_DISTANCE_THRESHOLD[2] = {2.8, 4.5}; //{2.5/2, 3.5/2};
 // Delay
 int moveForwardDelay = 15; // Original = 4450
 int turnDelay = 5;         // Original = 4700
-int explorationDelay = 250;  // Original = 125, try 2.5
+int explorationDelay = 1250;  // Original = 125, try 2.5
 int calibrationDelay = 10; // Not used
 
 // Sensor Range
@@ -139,6 +140,7 @@ void loop()
   }
 }
 
+
 // ==================== Modes ====================
 void exploration()
 {
@@ -154,7 +156,7 @@ void exploration()
         goStraightNGrids(1);
         getSensorsDistanceRM(sensorSampleSize);
         // to make sure robot is straight
-//        checktAngle(LEFT_ANGLE_OFFSET);
+        checkAngle(LEFT_ANGLE_OFFSET);
       } 
       else if (sRead == "2")
       {
@@ -194,11 +196,21 @@ void exploration()
         calibrate_FRONT();
         getSensorsDistanceRM(sensorSampleSize);
       }
+      else if (sRead == "D")
+      {
+        checkCaliFrontDistance();
+        delay(explorationDelay);
+        getSensorsDistanceRM(sensorSampleSize);
+      }
       // Send when sensors 1 - 5 all -1
       else if (sRead == "F")
       {
         calibrate_FULL();
         getSensorsDistanceRM(sensorSampleSize);
+      }
+      else if (sRead == "B")
+      {
+        checkAngle(LEFT_ANGLE_OFFSET);
       }
       else if (sRead == "#")
       {
@@ -461,9 +473,27 @@ void calibrate_FRONT()
   // Front angle -> Front dis -> Front angle
   calibrateAngle(0);
   delay(calibrationDelay);
-  calibrateDistance(0);
+  checkCaliFrontDistance();
   delay(calibrationDelay);
   calibrateAngle(0);
+}
+
+void checkCaliFrontDistance(){
+  frontSensor2ToWall = SRSensorFront2.distance(); //getDistance(2);
+  frontSensor1ToWall = SRSensorFront1.distance();
+  frontSensor3ToWall = SRSensorFront3.distance();
+  
+  if (frontSensor2ToWall <= SRFRONT_2_RANGE[0] - 1.0){
+    calibrateDistance(0, 2);
+    delay(calibrationDelay);
+  } else if(frontSensor1ToWall <= SRFRONT_1_RANGE[0] - 1.0) {
+    calibrateDistance(0, 1);
+    delay(calibrationDelay);
+  } else if(frontSensor3ToWall <= SRFRONT_3_RANGE[0] - 1.0) {
+    calibrateDistance(0, 3);
+    delay(calibrationDelay);
+  }
+  return;
 }
 
 void calibrate_FULL()
@@ -480,13 +510,13 @@ void calibrate_FULL()
   delay(calibrationDelay);
   calibrateAngle(LEFT_ANGLE_OFFSET);
   delay(calibrationDelay);
-  calibrateDistance(LEFT_DIS_OFFSET);
+  calibrateDistance(LEFT_DIS_OFFSET, 2);
   delay(calibrationDelay);
   turnRightOneGrid();
   delay(calibrationDelay);
   calibrateAngle(0);
   delay(calibrationDelay);
-  calibrateDistance(0);
+  calibrateDistance(0, 2);
 }
 
 void calibrateSensorsAngle(float error, float offset)
@@ -508,9 +538,13 @@ void calibrateSensorsAngle(float error, float offset)
 void calibrateAngle(float offset)
 {
   int counter = 0;
-  frontSensor1ToWall = 0;
-  frontSensor3ToWall = 0;
+  frontSensor1ToWall = SRSensorFront1.distance();
+  frontSensor3ToWall = SRSensorFront3.distance();
   float calibrationAngleError = 0;
+  if (frontSensor1ToWall > MIN_DISTANCE_CALIBRATE || frontSensor3ToWall > MIN_DISTANCE_CALIBRATE)
+  {
+    return;
+  }
   while (counter < 15)
   {
     frontSensor1ToWall = SRSensorFront1.distance();
@@ -526,32 +560,41 @@ void calibrateAngle(float offset)
   }
 }
 
-void calibrateDistance(float offset)
+void calibrateDistance(float offset, int sensor)
 {
   frontSensor2ToWall = 0;
   float error;
+  float dist;
   while (1)
   {
     //Original
-    frontSensor2ToWall = SRSensorFront2.distance();
-    error = 3.5 - frontSensor2ToWall;
+    if(sensor == 2){
+      dist = SRSensorFront2.distance();
+      
+    } else if(sensor == 1){
+      dist = SRSensorFront1.distance();
+      
+    } else {
+      dist = SRSensorFront3.distance(); 
+    }
+    error = 3.5 - dist;
 
     // if(frontSensor2ToWall > MIN_DISTANCE_CALIBRATE)
     //   break;
 
     // offset: used when front wall and left wall distance is diff
-    if (frontSensor2ToWall >= (FRONT_SENSORS_DISTANCE_THRESHOLD[0] + offset) 
-            && frontSensor2ToWall < (FRONT_SENSORS_DISTANCE_THRESHOLD[1] + offset) )
+    if (dist >= (FRONT_SENSORS_DISTANCE_THRESHOLD[0] + offset) 
+            && dist < (FRONT_SENSORS_DISTANCE_THRESHOLD[1] + offset) )
       break;
 
-    if (frontSensor2ToWall < FRONT_SENSORS_DISTANCE_THRESHOLD[0])
+    if (dist < FRONT_SENSORS_DISTANCE_THRESHOLD[0])
     {
       md.setSpeeds(-120, -120);
       delay(abs(error) * 50); //100
       md.setBrakes(400, 400);
     }
 
-    else if (frontSensor2ToWall > FRONT_SENSORS_DISTANCE_THRESHOLD[1])
+    else if (dist > FRONT_SENSORS_DISTANCE_THRESHOLD[1])
     {
       md.setSpeeds(120, 120);
       delay(abs(error) * 50); //100
@@ -561,13 +604,18 @@ void calibrateDistance(float offset)
 }
 
 // run in each U
-void checktAngle(float offset)
+void checkAngle(float offset)
 {
   int counter = 0;
-  leftSensor1ToWall = 0;
-  leftSensor2ToWall = 0;
+  leftSensor1ToWall = SRSensorLeft1.distance();
+  leftSensor2ToWall = SRSensorLeft2.distance();
   float calibrationAngleError = 0;
-  while (counter < 5)
+  if (leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE || leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE)
+  {
+    return;
+  }
+  
+  while (counter < 20)
   {
     leftSensor1ToWall = SRSensorLeft1.distance();
     leftSensor2ToWall = SRSensorLeft2.distance();
@@ -582,6 +630,38 @@ void checktAngle(float offset)
   }
 }
 
+void calibrateLeftDistance()
+{
+  // Serial.println("=== calibrateLeftDistance ===");
+  // Function that implement the logic when to turn left 90degree, and then call calibrateFrontDistance.
+  leftSensor1ToWall = SRSensorLeft1.distance();
+  leftSensor2ToWall = SRSensorLeft2.distance();
+  // Serial.println(leftSensor1ToWall);
+  // Serial.println(leftSensor2ToWall);
+  float diff = abs(leftSensor1ToWall - leftSensor2ToWall);
+//  if (leftSensor1ToWall > SRLEFT_1_RANGE[0] || leftSensor2ToWall > SRLEFT_2_RANGE[0]) {
+//    return;
+//  }
+//  calibrateLeftAngle();
+  if (leftSensor1ToWall > MIN_DISTANCE_LEFT_CALIBRATE && leftSensor2ToWall > MIN_DISTANCE_LEFT_CALIBRATE )
+  {
+    return;
+  }
+//    Serial.println("Running before calibrateLeftAngle");
+//    calibrateLeftAngle();
+    
+    //abort if within margin of error
+    if ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]))
+    {
+      return;
+    }
+//      delay(calibrationDelay);
+      turnLeftOneGrid();
+      delay(calibrationDelay);
+      calibrate_FRONT();
+      delay(calibrationDelay);
+      turnRightOneGrid();    
+}
 void debugSensorDistance()
 {
   debugOutput = "d";
