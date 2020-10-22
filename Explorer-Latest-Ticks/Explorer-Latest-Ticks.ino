@@ -877,7 +877,7 @@ void calibrateLeftDistance()
     return;
   }
 //    Serial.println("Running before calibrateLeftAngle");
-//    calibrateLeftAngle();
+    calibrateLeftAngle();
     
     //abort if within margin of error
     if ((leftSensor1ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor1ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]) || (leftSensor2ToWall >= LEFT_SENSORS_DISTANCE_THRESHOLD[0] && leftSensor2ToWall < LEFT_SENSORS_DISTANCE_THRESHOLD[1]))
@@ -889,8 +889,7 @@ void calibrateLeftDistance()
       delay(calibrationDelay);
       calibrate();
       delay(calibrationDelay);
-      turnRightOneGrid();
-      
+      turnRightOneGrid();    
 }
 
 // ==================== Debug ====================

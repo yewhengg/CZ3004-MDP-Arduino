@@ -74,7 +74,7 @@ unsigned int totalDistance = 0;
 // Sensors
 String sensorOutput = "";
 int counter = 0;
-int sensorSampleSize = 50; //FOR TESTING IS 50
+int sensorSampleSize = 20; //FOR TESTING IS 50
 RunningMedian srSensorFront1DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorFront2DistanceRM = RunningMedian(sensorSampleSize);
 RunningMedian srSensorFront3DistanceRM = RunningMedian(sensorSampleSize);
@@ -154,18 +154,18 @@ void exploration()
       if (sRead == "U")
       {
         goStraightNGrids(1);
-        getSensorsDistanceRM(sensorSampleSize);
-        debugSensorDistance();
-        // to make sure robot is straight
-        checkAngle(LEFT_ANGLE_OFFSET);
         
-      } 
-      else if (sRead == "2")
-      {
-        goStraightNGrids(2);
+        // to make sure robot is straight
         getSensorsDistanceRM(sensorSampleSize);
-        debugSensorDistance();
-      }
+        checkAngle(LEFT_ANGLE_OFFSET);
+//        debugSensorDistance();
+      } 
+//      else if (sRead == "2")
+//      {
+//        goStraightNGrids(2);
+//        getSensorsDistanceRM(sensorSampleSize);
+//        debugSensorDistance();
+//      }
       else if (sRead == "L")
       {
         delay(explorationDelay);
@@ -489,14 +489,14 @@ void checkCaliFrontDistance(){
   frontSensor3ToWall = SRSensorFront3.distance();
   
   if (frontSensor2ToWall <= SRFRONT_2_RANGE[0] - 1.0){
-    calibrateDistance(0, 2);
-    delay(calibrationDelay);
+    calibrateDistanceTwo(0);
+//    delay(calibrationDelay);
   } else if(frontSensor1ToWall <= SRFRONT_1_RANGE[0] - 1.0) {
-    calibrateDistance(0, 1);
-    delay(calibrationDelay);
+    calibrateDistanceOne(0);
+//    delay(calibrationDelay);
   } else if(frontSensor3ToWall <= SRFRONT_3_RANGE[0] - 1.0) {
-    calibrateDistance(0, 3);
-    delay(calibrationDelay);
+    calibrateDistanceThree(0);
+//    delay(calibrationDelay);
   }
   return;
 }
@@ -515,13 +515,13 @@ void calibrate_FULL()
   delay(calibrationDelay);
   calibrateAngle(LEFT_ANGLE_OFFSET);
   delay(calibrationDelay);
-  calibrateDistance(LEFT_DIS_OFFSET, 2);
+  calibrateDistanceTwo(LEFT_DIS_OFFSET);
   delay(calibrationDelay);
   turnRightOneGrid();
   delay(calibrationDelay);
   calibrateAngle(0);
   delay(calibrationDelay);
-  calibrateDistance(0, 2);
+  calibrateDistanceTwo(0);
 }
 
 void calibrateSensorsAngle(float error, float offset)
@@ -596,29 +596,71 @@ void calibrateAngle(float offset)
   }
 }
 
-void calibrateDistance(float offset, int sensor)
+void calibrateDistanceOne(float offset)
 {
-  frontSensor2ToWall = 0;
   float error;
   float dist;
-  while (1)
-  {
-    //Original
-    if(sensor == 2){
-      dist = SRSensorFront2.distance();
-      
-    } else if(sensor == 1){
-      dist = SRSensorFront1.distance();
-      
-    } else {
-      dist = SRSensorFront3.distance(); 
-    }
+
+  while(1){
+    dist = SRSensorFront1.distance();
     error = 3.5 - dist;
 
-    // if(frontSensor2ToWall > MIN_DISTANCE_CALIBRATE)
-    //   break;
+    if (dist >= (FRONT_SENSORS_DISTANCE_THRESHOLD[0] + offset) 
+            && dist < (FRONT_SENSORS_DISTANCE_THRESHOLD[1] + offset) )
+      break;
 
-    // offset: used when front wall and left wall distance is diff
+    if (dist < FRONT_SENSORS_DISTANCE_THRESHOLD[0])
+    {
+      md.setSpeeds(-120, -120);
+      delay(abs(error) * 50); //100
+      md.setBrakes(400, 400);
+    }
+
+    else if (dist > FRONT_SENSORS_DISTANCE_THRESHOLD[1])
+    {
+      md.setSpeeds(120, 120);
+      delay(abs(error) * 50); //100
+      md.setBrakes(400, 400);
+    }
+  }
+}
+void calibrateDistanceTwo(float offset)
+{
+  float error;
+  float dist;
+
+  while(1){
+    dist = SRSensorFront2.distance();
+    error = 3.5 - dist;
+
+    if (dist >= (FRONT_SENSORS_DISTANCE_THRESHOLD[0] + offset) 
+            && dist < (FRONT_SENSORS_DISTANCE_THRESHOLD[1] + offset) )
+      break;
+
+    if (dist < FRONT_SENSORS_DISTANCE_THRESHOLD[0])
+    {
+      md.setSpeeds(-120, -120);
+      delay(abs(error) * 50); //100
+      md.setBrakes(400, 400);
+    }
+
+    else if (dist > FRONT_SENSORS_DISTANCE_THRESHOLD[1])
+    {
+      md.setSpeeds(120, 120);
+      delay(abs(error) * 50); //100
+      md.setBrakes(400, 400);
+    }
+  }
+}
+void calibrateDistanceThree(float offset)
+{
+  float error;
+  float dist;
+
+  while(1){
+    dist = SRSensorFront3.distance();
+    error = 3.5 - dist;
+
     if (dist >= (FRONT_SENSORS_DISTANCE_THRESHOLD[0] + offset) 
             && dist < (FRONT_SENSORS_DISTANCE_THRESHOLD[1] + offset) )
       break;
