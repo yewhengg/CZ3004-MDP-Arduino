@@ -220,69 +220,69 @@ void fastestPath(){
       if(sRead == "1"){
         goStraightNGrids(1);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println"rV");
       } else if(sRead == "2"){
         goStraightNGrids(2);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "3"){
         goStraightNGrids(3);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "4"){
         goStraightNGrids(4);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "5"){
         goStraightNGrids(5);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "6"){
         goStraightNGrids(6);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "7"){
         goStraightNGrids(7);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "8"){
         goStraightNGrids(8);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "9"){
         goStraightNGrids(9);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "A"){
         goStraightNGrids(10);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "B"){
         goStraightNGrids(11);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "C"){
         goStraightNGrids(12);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "D"){
         goStraightNGrids(13);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "E"){
         goStraightNGrids(14);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if(sRead == "F"){
         goStraightNGrids(15);
         checkCaliFrontDistance();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if (sRead == "R"){
         turnRightOneGrid();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if (sRead == "L"){
         turnLeftOneGrid();
-        Serial.print("rV");
+        Serial.println("rV");
       } else if (sRead == "#") {
         fastestPathFlag = false;
       }
