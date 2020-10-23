@@ -520,6 +520,14 @@ void getSensorsDistanceRM(int n)
   {
     lrSensorRight1DistanceOutput = 2;
   }
+  else if (lrSensorRight1Distance <= LRRIGHT_1_RANGE[3])
+  {
+    lrSensorRight1DistanceOutput = 3;
+  }
+  else if (lrSensorRight1Distance <= LRRIGHT_1_RANGE[4])
+  {
+    lrSensorRight1DistanceOutput = 4;
+  }
   else
   {
     lrSensorRight1DistanceOutput = 0;
