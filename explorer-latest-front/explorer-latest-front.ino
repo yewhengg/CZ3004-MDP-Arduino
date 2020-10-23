@@ -45,7 +45,7 @@ float SRFRONT_2_RANGE[3] = {10.50, 20.90, 36.02};               //{11.10, 22.20,
 float SRFRONT_3_RANGE[3] = {10.60, 20.20, 40.75};               //{11.10, 23.10, 40.75};
 float SRLEFT_1_RANGE[3] = {11.52, 22.30, 34.17};                //{13.63, 20.60, 27.52}
 float SRLEFT_2_RANGE[3] = {11.70, 23.20, 32.16};                //{13.63, 20.60, 26.45}
-float LRRIGHT_1_RANGE[5] = {12.52, 22.70, 31.00, 44.04, 51.21}; //{13.90, 20.55, 29.54}
+float LRRIGHT_1_RANGE[5] = {12.52, 22.70, 31.10, 40.11, 51.21}; //{13.90, 20.55, 29.54}
 
 // Initialisation
 DualVNH5019MotorShield md;
@@ -165,21 +165,21 @@ void exploration()
         delay(explorationDelay);
         turnLeftOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
-//        debugSensorDistance();
+        debugSensorDistance();
       }
       else if (sRead == "R")
       {
         delay(explorationDelay); 
         turnRightOneGrid();
         getSensorsDistanceRM(sensorSampleSize);
-//        debugSensorDistance();
+        debugSensorDistance();
       }
       // Send when sensors 1 - 3 all -1
       else if (sRead == "C")
       {
         calibrate_FRONT();
         getSensorsDistanceRM(sensorSampleSize);
-//        debugSensorDistance();
+        debugSensorDistance();
       }
 //      else if (sRead == "D")
 //      {
@@ -193,7 +193,7 @@ void exploration()
       {
         calibrate_FULL();
         getSensorsDistanceRM(sensorSampleSize);
-//        debugSensorDistance();
+        debugSensorDistance();
       }
       else if (sRead == "B")
       {
@@ -220,69 +220,69 @@ void fastestPath(){
       if(sRead == "1"){
         goStraightNGrids(1);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "2"){
         goStraightNGrids(2);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "3"){
         goStraightNGrids(3);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "4"){
         goStraightNGrids(4);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "5"){
         goStraightNGrids(5);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "6"){
         goStraightNGrids(6);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "7"){
         goStraightNGrids(7);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "8"){
         goStraightNGrids(8);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "9"){
         goStraightNGrids(9);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "A"){
         goStraightNGrids(10);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "B"){
         goStraightNGrids(11);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "C"){
         goStraightNGrids(12);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "D"){
         goStraightNGrids(13);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "E"){
         goStraightNGrids(14);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if(sRead == "F"){
         goStraightNGrids(15);
         checkCaliFrontDistance();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if (sRead == "R"){
         turnRightOneGrid();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if (sRead == "L"){
         turnLeftOneGrid();
-        Serial.println("rV");
+        Serial.print("rV");
       } else if (sRead == "#") {
         fastestPathFlag = false;
       }
