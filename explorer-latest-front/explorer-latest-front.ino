@@ -220,7 +220,7 @@ void fastestPath(){
       if(sRead == "1"){
         goStraightNGrids(1);
         checkCaliFrontDistance();
-        Serial.println"rV");
+        Serial.println("rV");
       } else if(sRead == "2"){
         goStraightNGrids(2);
         checkCaliFrontDistance();
